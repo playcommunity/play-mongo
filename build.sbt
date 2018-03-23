@@ -39,20 +39,14 @@ val buildSettings = Seq(
   scalacOptions in IntegrationTest := scalacOptionsTest
 )
 
-lazy val core = Project(
-  id = "core",
-  base = file("core")
-).configs(IntegrationTest)
-  .settings(buildSettings)
-  .settings(libraryDependencies ++= Seq(mongodbDriver, reactiveStream, scalaReflect, playJson, scalaTest))
-  .aggregate(json)
-  .dependsOn(json)
-
-lazy val json = Project(
-  id = "json",
-  base = file("json")
+lazy val codecs = Project(
+  id = "codecs",
+  base = file("codecs")
 ).settings(buildSettings)
-  .settings(libraryDependencies ++= Seq(mongodbDriver, reactiveStream, scalaReflect, playJson, scalaTest))
+  .settings(
+    version := "0.1.0",
+    libraryDependencies ++= Seq(mongodbDriver, reactiveStream, scalaReflect, playJson, scalaTest)
+  )
 
 lazy val play = Project(
   id = "play",
@@ -60,26 +54,26 @@ lazy val play = Project(
 ).enablePlugins(PlayLibrary)
   .settings(buildSettings)
   .settings(
+    version := "0.1.0",
     libraryDependencies ++= Seq(
       "com.typesafe.play" %% "play" % PlayVersion,
       "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % "test"
     )
   )
-  .dependsOn(core)
+  .aggregate(codecs)
+  .dependsOn(codecs)
 
 lazy val root = Project(
   id = "play-mongo",
   base = file(".")
 ).settings(buildSettings)
-  .aggregate(core)
   .aggregate(play)
-  .dependsOn(core)
   .dependsOn(play)
 
 playBuildRepoName in ThisBuild := "play-mongo"
 
-homepage := Some(url("https://github.com/playcommunity/play-mongo"))
-scmInfo := Some(ScmInfo(url("https://github.com/playcommunity/play-mongo"), "git@github.com:playcommunity/play-mongo.git"))
+homepage := Some(url("https://github.com/joymufeng/play-mongo"))
+scmInfo := Some(ScmInfo(url("https://github.com/joymufeng/play-mongo.git"), "git@github.com:joymufeng/play-mongo.git"))
 developers := List(
   Developer(
     "joymufeng",
