@@ -1250,11 +1250,11 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    * Creates a change stream for this collection.
    *
    * @tparam C   the target document type of the observable.
-   * @return the change stream observable
+   * @return the change stream
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def watch[C]()(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): ChangeStreamIterable[C] = wrapped.watch(ct)
+  def watch[C]()(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): ChangeStream[C] = ChangeStream(wrapped.watch(ct))
 
   /**
    * Creates a change stream for this collection.
