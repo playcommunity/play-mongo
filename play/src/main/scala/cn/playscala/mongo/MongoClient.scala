@@ -19,6 +19,7 @@ package cn.playscala.mongo
 import java.io.Closeable
 
 import cn.playscala.mongo.codecs.json.JsonCodecProvider
+import cn.playscala.mongo.codecs.time.JOffsetDateTimeCodec
 import cn.playscala.mongo.internal.AsyncResultHelper._
 import cn.playscala.mongo.internal.DefaultHelper.DefaultsTo
 import com.mongodb.async.SingleResultCallback
@@ -45,7 +46,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object MongoClient {
 
   val DEFAULT_CODEC_REGISTRY: CodecRegistry = fromRegistries(
-    fromProviders(new JsonCodecProvider())
+    MongoClients.getDefaultCodecRegistry,
+    fromProviders(new JsonCodecProvider()),
+    fromCodecs(new JOffsetDateTimeCodec)
   )
 
   /**

@@ -45,7 +45,7 @@ lazy val codecs = Project(
 ).settings(buildSettings)
   .settings(
     version := "0.1.0",
-    libraryDependencies ++= Seq(mongodbDriver, reactiveStream, scalaReflect, playJson, scalaTest)
+    libraryDependencies ++= Seq("com.typesafe.play" %% "play" % PlayVersion, mongodbDriver, reactiveStream, scalaReflect, playJson, scalaTest)
   )
 
 lazy val play = Project(

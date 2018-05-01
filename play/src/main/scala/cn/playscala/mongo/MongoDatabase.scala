@@ -14,6 +14,7 @@ import scala.reflect.ClassTag
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import play.api.libs.json.JsObject
+import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 
 /**
  * The MongoDatabase representation.
@@ -67,6 +68,16 @@ case class MongoDatabase(val wrapped: JMongoDatabase) {
    */
   def withCodecRegistry(codecRegistry: CodecRegistry): MongoDatabase =
     MongoDatabase(wrapped.withCodecRegistry(codecRegistry))
+
+  def addCodecRegistry(codecRegistry: CodecRegistry): MongoDatabase =
+    MongoDatabase(wrapped.withCodecRegistry(fromRegistries(wrapped.getCodecRegistry, codecRegistry)))
+
+  def addCodecRegistry(codecRegistry: Option[CodecRegistry]): MongoDatabase =
+    codecRegistry match {
+      case Some(r) => MongoDatabase(wrapped.withCodecRegistry(fromRegistries(wrapped.getCodecRegistry, r)))
+      case None => MongoDatabase(wrapped)
+    }
+
 
   /**
    * Create a new MongoDatabase instance with a different read preference.

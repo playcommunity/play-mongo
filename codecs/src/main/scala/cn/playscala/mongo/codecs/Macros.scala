@@ -16,7 +16,7 @@
 
 package cn.playscala.mongo.codecs
 
-import cn.playscala.mongo.codecs.macrocodecs.{CaseClassCodec, CaseClassProvider}
+import cn.playscala.mongo.codecs.macrocodecs.{CaseClassCodec, ModelsRegistryProvider, CaseClassProvider}
 import org.bson.codecs.Codec
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
 import scala.annotation.compileTimeOnly
