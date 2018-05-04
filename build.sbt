@@ -15,6 +15,8 @@ val PlayVersion = playVersion(sys.env.getOrElse("PLAY_VERSION", "2.6.12"))
 val mongodbDriver  = "org.mongodb" % "mongodb-driver-async" % "3.6.3"
 val reactiveStream = "org.reactivestreams" % "reactive-streams" % "1.0.2"
 val scalaReflect   = "org.scala-lang" % "scala-reflect" % "2.12.4"
+val scalaMeta = "org.scalameta" %% "scalameta" % "3.7.3"
+val scalaMetaContrib = "org.scalameta" %% "contrib" % "3.7.3"
 val playJson       = "com.typesafe.play" %% "play-json" % "2.6.9"
 val scalaTest      = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
@@ -45,7 +47,7 @@ lazy val codecs = Project(
 ).settings(buildSettings)
   .settings(
     version := "0.1.0",
-    libraryDependencies ++= Seq("com.typesafe.play" %% "play" % PlayVersion, mongodbDriver, reactiveStream, scalaReflect, playJson, scalaTest)
+    libraryDependencies ++= Seq("com.typesafe.play" %% "play" % PlayVersion, mongodbDriver, reactiveStream, scalaReflect, scalaMeta, scalaMetaContrib, playJson, scalaTest)
   )
 
 lazy val play = Project(
