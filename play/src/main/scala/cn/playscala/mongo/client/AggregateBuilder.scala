@@ -11,7 +11,7 @@ import cn.playscala.mongo._
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 
-case class AggregateBuilder[TDocument, M, R] (private val collection: MongoCollection[TDocument], field: String)(implicit mClassTag: ClassTag[M], mTypeTag: TypeTag[M], rClassTag: ClassTag[R], rTypeTag: TypeTag[R]) {
+case class AggregateBuilder[M, R] (private val collection: MongoCollection[_], field: String)(implicit mClassTag: ClassTag[M], mTypeTag: TypeTag[M], rClassTag: ClassTag[R], rTypeTag: TypeTag[R]) {
 
   def list(): Future[List[(M, List[R])]] = {
     val rFieldSuffix = "___"

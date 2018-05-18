@@ -79,7 +79,7 @@ case class Mongo(config: MongoConfig) {
     * @tparam M   the target document type.
     * @return the FindBuilder
     */
-  def find[M]()(implicit ct: ClassTag[M], tt: TypeTag[M]): FindBuilder[M, M] = {
+  def find[M]()(implicit ct: ClassTag[M], tt: TypeTag[M]): FindBuilder[M] = {
     getCollection[M].find[M]()
   }
 
@@ -91,7 +91,7 @@ case class Mongo(config: MongoConfig) {
     * @tparam M    the target document type.
     * @return the future of result list.
     */
-  def find[M](filter: JsObject)(implicit ct: ClassTag[M], tt: TypeTag[M]): FindBuilder[M, M] = {
+  def find[M](filter: JsObject)(implicit ct: ClassTag[M], tt: TypeTag[M]): FindBuilder[M] = {
     getCollection[M].find[M](filter)
   }
 

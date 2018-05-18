@@ -22,14 +22,13 @@ import scala.reflect.runtime.universe._
   *
   * @param wrapped
   * @param collection
-  * @tparam TDocument the declared result type of collection.
   * @tparam TResult the target result type.
   */
-case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped: FindIterable[TResult], collection: MongoCollection[TDocument])(implicit ct: ClassTag[TResult], tt: TypeTag[TResult]) {
+case class FindBuilder[TResult:ClassTag:TypeTag](private val wrapped: FindIterable[TResult], collection: MongoCollection[_])(implicit ct: ClassTag[TResult], tt: TypeTag[TResult]) {
   val appliedOperations = mutable.Map.empty[String, Any]
 
-  def fetch[R](field: String)(implicit ct: ClassTag[R], tt: TypeTag[R]): AggregateBuilder[TDocument, TResult, R] = {
-    AggregateBuilder[TDocument, TResult, R](collection, field)
+  def fetch[R](field: String)(implicit ct: ClassTag[R], tt: TypeTag[R]): AggregateBuilder[TResult, R] = {
+    AggregateBuilder[TResult, R](collection, field)
   }
 
   /**
@@ -54,7 +53,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @param filter the filter, which may be null.
     * @return this
     */
-  def filter(filter: JsObject): FindBuilder[TDocument, TResult] = {
+  def filter(filter: JsObject): FindBuilder[TResult] = {
     appliedOperations("filter") = filter
     wrapped.filter(filter)
     this
@@ -67,7 +66,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @param limit the limit, which may be null
     * @return this
     */
-  def limit(limit: Int): FindBuilder[TDocument, TResult] = {
+  def limit(limit: Int): FindBuilder[TResult] = {
     appliedOperations("limit") = limit
     wrapped.limit(limit)
     this
@@ -80,7 +79,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @param skip the number of documents to skip
     * @return this
     */
-  def skip(skip: Int): FindBuilder[TDocument, TResult] = {
+  def skip(skip: Int): FindBuilder[TResult] = {
     appliedOperations("skip") = skip
     wrapped.skip(skip)
     this
@@ -93,7 +92,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @param duration the duration
     * @return this
     */
-  def maxTime(duration: Duration): FindBuilder[TDocument, TResult] = {
+  def maxTime(duration: Duration): FindBuilder[TResult] = {
     appliedOperations("maxTime") = duration
     wrapped.maxTime(duration.toMillis, TimeUnit.MILLISECONDS)
     this
@@ -116,7 +115,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @return the maximum await execution time in the given time unit
     * @since 1.1
     */
-  def maxAwaitTime(duration: Duration): FindBuilder[TDocument, TResult] = {
+  def maxAwaitTime(duration: Duration): FindBuilder[TResult] = {
     appliedOperations("maxAwaitTime") = duration
     wrapped.maxAwaitTime(duration.toMillis, TimeUnit.MILLISECONDS)
     this
@@ -132,7 +131,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @deprecated use the individual setters instead
     */
   @Deprecated
-  def modifiers(modifiers: JsObject): FindBuilder[TDocument, TResult] = {
+  def modifiers(modifiers: JsObject): FindBuilder[TResult] = {
     wrapped.modifiers(modifiers)
     this
   }
@@ -144,7 +143,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @param projection the project document, which may be null.
     * @return this
     */
-  def projection(projection: JsObject): FindBuilder[TDocument, TResult] = {
+  def projection(projection: JsObject): FindBuilder[TResult] = {
     appliedOperations("projection") = projection
     wrapped.projection(projection)
     this
@@ -157,7 +156,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @param sort the sort criteria, which may be null.
     * @return this
     */
-  def sort(sort: JsObject): FindBuilder[TDocument, TResult] = {
+  def sort(sort: JsObject): FindBuilder[TResult] = {
     appliedOperations("sort") = sort
     wrapped.sort(sort)
     this
@@ -170,7 +169,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @param noCursorTimeout true if cursor timeout is disabled
     * @return this
     */
-  def noCursorTimeout(noCursorTimeout: Boolean): FindBuilder[TDocument, TResult] = {
+  def noCursorTimeout(noCursorTimeout: Boolean): FindBuilder[TResult] = {
     wrapped.noCursorTimeout(noCursorTimeout)
     this
   }
@@ -181,7 +180,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @param oplogReplay if oplog replay is enabled
     * @return this
     */
-  def oplogReplay(oplogReplay: Boolean): FindBuilder[TDocument, TResult] = {
+  def oplogReplay(oplogReplay: Boolean): FindBuilder[TResult] = {
     wrapped.oplogReplay(oplogReplay)
     this
   }
@@ -192,7 +191,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @param partial if partial results for sharded clusters is enabled
     * @return this
     */
-  def partial(partial: Boolean): FindBuilder[TDocument, TResult] = {
+  def partial(partial: Boolean): FindBuilder[TResult] = {
     wrapped.partial(partial)
     this
   }
@@ -203,7 +202,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @param cursorType the cursor type
     * @return this
     */
-  def cursorType(cursorType: CursorType): FindBuilder[TDocument, TResult] = {
+  def cursorType(cursorType: CursorType): FindBuilder[TResult] = {
     wrapped.cursorType(cursorType)
     this
   }
@@ -217,7 +216,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @note A null value represents the server default.
     * @note Requires MongoDB 3.4 or greater
     */
-  def collation(collation: Collation): FindBuilder[TDocument, TResult] = {
+  def collation(collation: Collation): FindBuilder[TResult] = {
     wrapped.collation(collation)
     this
   }
@@ -229,7 +228,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @return this
     * @since 2.2
     */
-  def comment(comment: String): FindBuilder[TDocument, TResult] = {
+  def comment(comment: String): FindBuilder[TResult] = {
     wrapped.comment(comment)
     this
   }
@@ -241,7 +240,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @return this
     * @since 2.2
     */
-  def hint(hint: JsObject): FindBuilder[TDocument, TResult] = {
+  def hint(hint: JsObject): FindBuilder[TResult] = {
     wrapped.hint(hint)
     this
   }
@@ -253,7 +252,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @return this
     * @since 2.2
     */
-  def max(max: JsObject): FindBuilder[TDocument, TResult] = {
+  def max(max: JsObject): FindBuilder[TResult] = {
     appliedOperations("max") = max
     wrapped.max(max)
     this
@@ -266,7 +265,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @return this
     * @since 2.2
     */
-  def min(min: JsObject): FindBuilder[TDocument, TResult] = {
+  def min(min: JsObject): FindBuilder[TResult] = {
     appliedOperations("min") = min
     wrapped.min(min)
     this
@@ -281,7 +280,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @return this
     * @since 2.2
     */
-  def maxScan(maxScan: Long): FindBuilder[TDocument, TResult] = {
+  def maxScan(maxScan: Long): FindBuilder[TResult] = {
     appliedOperations("maxScan") = maxScan
     wrapped.maxScan(maxScan)
     this
@@ -294,7 +293,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @return this
     * @since 2.2
     */
-  def returnKey(returnKey: Boolean): FindBuilder[TDocument, TResult] = {
+  def returnKey(returnKey: Boolean): FindBuilder[TResult] = {
     wrapped.returnKey(returnKey)
     this
   }
@@ -306,7 +305,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @return this
     * @since 2.2
     */
-  def showRecordId(showRecordId: Boolean): FindBuilder[TDocument, TResult] = {
+  def showRecordId(showRecordId: Boolean): FindBuilder[TResult] = {
     wrapped.showRecordId(showRecordId)
     this
   }
@@ -320,7 +319,7 @@ case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped:
     * @return this
     * @since 2.2
     */
-  def snapshot(snapshot: Boolean): FindBuilder[TDocument, TResult] = {
+  def snapshot(snapshot: Boolean): FindBuilder[TResult] = {
     wrapped.snapshot(snapshot)
     this
   }
