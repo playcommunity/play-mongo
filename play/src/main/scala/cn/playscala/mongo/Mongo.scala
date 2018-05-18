@@ -79,7 +79,7 @@ case class Mongo(config: MongoConfig) {
     * @tparam M   the target document type.
     * @return the FindBuilder
     */
-  def find[M]()(implicit ct: ClassTag[M], tt: TypeTag[M]): FindBuilder[M] = {
+  def find[M]()(implicit ct: ClassTag[M], tt: TypeTag[M]): FindBuilder[M, M] = {
     getCollection[M].find[M]()
   }
 
@@ -91,7 +91,7 @@ case class Mongo(config: MongoConfig) {
     * @tparam M    the target document type.
     * @return the future of result list.
     */
-  def find[M](filter: JsObject)(implicit ct: ClassTag[M], tt: TypeTag[M]): FindBuilder[M] = {
+  def find[M](filter: JsObject)(implicit ct: ClassTag[M], tt: TypeTag[M]): FindBuilder[M, M] = {
     getCollection[M].find[M](filter)
   }
 
@@ -102,10 +102,9 @@ case class Mongo(config: MongoConfig) {
     * @tparam M
     * @return
     */
-  private def getCollection[M](implicit ct: ClassTag[M], tt: TypeTag[M]): MongoCollection[M] = {
-    val colName = Mongo.getCollectionName(tt)
-    database.getCollection[M](colName)
-  }
+  private def getCollection[M](implicit ct: ClassTag[M], tt: TypeTag[M]): MongoCollection[M] =
+    database.getCollection[M](Mongo.getCollectionName(tt))
+
 
   def close(): Unit = {
     client.close()

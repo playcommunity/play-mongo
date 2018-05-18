@@ -245,11 +245,11 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @tparam C   the target document type.
    * @return the FindBuilder
    */
-  def find[C]()(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): FindBuilder[C] = {
+  def find[C]()(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): FindBuilder[TDocument, C] = {
     if (!hasPreFilter) {
-      FindBuilder(wrapped.find[C](ct))
+      FindBuilder(wrapped.find[C](ct), this)
     } else {
-      FindBuilder(wrapped.find[C](preFilter, ct))
+      FindBuilder(wrapped.find[C](preFilter, ct), this)
     }
   }
 
@@ -261,11 +261,11 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @tparam C    the target document type.
    * @return the future of result list.
    */
-  def find[C](filter: JsObject)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): FindBuilder[C] = {
+  def find[C](filter: JsObject)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): FindBuilder[TDocument, C] = {
     if (!hasPreFilter) {
-      FindBuilder(wrapped.find(filter, ct))
+      FindBuilder(wrapped.find(filter, ct), this)
     } else {
-      FindBuilder(wrapped.find(withPreFilter(filter), ct))
+      FindBuilder(wrapped.find(withPreFilter(filter), ct), this)
     }
   }
 
@@ -300,7 +300,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @tparam C    the target document type.
    * @return the future of result list.
    */
-  def find[C](filter: JsObject, projection: JsObject)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): FindBuilder[C] = {
+  def find[C](filter: JsObject, projection: JsObject)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): FindBuilder[TDocument, C] = {
     if (!hasPreFilter) {
       find[C](filter).projection(projection)
     } else {
@@ -319,11 +319,11 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def find[C](clientSession: ClientSession)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): FindBuilder[C] = {
+  def find[C](clientSession: ClientSession)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): FindBuilder[TDocument, C] = {
     if (!hasPreFilter) {
-      FindBuilder(wrapped.find[C](clientSession, ct))
+      FindBuilder(wrapped.find[C](clientSession, ct), this)
     } else {
-      FindBuilder(wrapped.find[C](clientSession, preFilter, ct))
+      FindBuilder(wrapped.find[C](clientSession, preFilter, ct), this)
     }
   }
 
@@ -338,11 +338,11 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def find[C](clientSession: ClientSession, filter: JsObject)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): FindBuilder[C] = {
+  def find[C](clientSession: ClientSession, filter: JsObject)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): FindBuilder[TDocument, C] = {
     if (!hasPreFilter) {
-      FindBuilder(wrapped.find(clientSession, filter, ct))
+      FindBuilder(wrapped.find(clientSession, filter, ct), this)
     } else {
-      FindBuilder(wrapped.find(clientSession, withPreFilter(filter), ct))
+      FindBuilder(wrapped.find(clientSession, withPreFilter(filter), ct), this)
     }
   }
 
@@ -357,7 +357,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def find[C](clientSession: ClientSession, filter: JsObject, projection: JsObject)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): FindBuilder[C] = {
+  def find[C](clientSession: ClientSession, filter: JsObject, projection: JsObject)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): FindBuilder[TDocument, C] = {
     if (!hasPreFilter) {
       find[C](clientSession, filter).projection(projection)
     } else {

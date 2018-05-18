@@ -1,17 +1,37 @@
 package cn.playscala.mongo.client
 
 import java.util.concurrent.TimeUnit
+
+import cn.playscala.mongo.MongoCollection
 import com.mongodb.async.SingleResultCallback
 import com.mongodb.async.client.FindIterable
 import play.api.libs.json.JsObject
 import cn.playscala.mongo.codecs.Implicits.toBsonDocument
+
 import scala.concurrent.Future
 import cn.playscala.mongo.internal.AsyncResultHelper._
 import com.mongodb.CursorType
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
+import scala.collection.mutable
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe._
 
-case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
+/**
+  *
+  * @param wrapped
+  * @param collection
+  * @tparam TDocument the declared result type of collection.
+  * @tparam TResult the target result type.
+  */
+case class FindBuilder[TDocument, TResult:ClassTag:TypeTag](private val wrapped: FindIterable[TResult], collection: MongoCollection[TDocument])(implicit ct: ClassTag[TResult], tt: TypeTag[TResult]) {
+  val appliedOperations = mutable.Map.empty[String, Any]
+
+  def fetch[R](field: String)(implicit ct: ClassTag[R], tt: TypeTag[R]): AggregateBuilder[TDocument, TResult, R] = {
+    AggregateBuilder[TDocument, TResult, R](collection, field)
+  }
+
   /**
     * Execute the query and return the query results.
     * @return A future of result list.
@@ -34,7 +54,8 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @param filter the filter, which may be null.
     * @return this
     */
-  def filter(filter: JsObject): FindBuilder[TResult] = {
+  def filter(filter: JsObject): FindBuilder[TDocument, TResult] = {
+    appliedOperations("filter") = filter
     wrapped.filter(filter)
     this
   }
@@ -46,7 +67,8 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @param limit the limit, which may be null
     * @return this
     */
-  def limit(limit: Int): FindBuilder[TResult] = {
+  def limit(limit: Int): FindBuilder[TDocument, TResult] = {
+    appliedOperations("limit") = limit
     wrapped.limit(limit)
     this
   }
@@ -58,7 +80,8 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @param skip the number of documents to skip
     * @return this
     */
-  def skip(skip: Int): FindBuilder[TResult] = {
+  def skip(skip: Int): FindBuilder[TDocument, TResult] = {
+    appliedOperations("skip") = skip
     wrapped.skip(skip)
     this
   }
@@ -70,7 +93,8 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @param duration the duration
     * @return this
     */
-  def maxTime(duration: Duration): FindBuilder[TResult] = {
+  def maxTime(duration: Duration): FindBuilder[TDocument, TResult] = {
+    appliedOperations("maxTime") = duration
     wrapped.maxTime(duration.toMillis, TimeUnit.MILLISECONDS)
     this
   }
@@ -92,7 +116,8 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @return the maximum await execution time in the given time unit
     * @since 1.1
     */
-  def maxAwaitTime(duration: Duration): FindBuilder[TResult] = {
+  def maxAwaitTime(duration: Duration): FindBuilder[TDocument, TResult] = {
+    appliedOperations("maxAwaitTime") = duration
     wrapped.maxAwaitTime(duration.toMillis, TimeUnit.MILLISECONDS)
     this
   }
@@ -107,7 +132,7 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @deprecated use the individual setters instead
     */
   @Deprecated
-  def modifiers(modifiers: JsObject): FindBuilder[TResult] = {
+  def modifiers(modifiers: JsObject): FindBuilder[TDocument, TResult] = {
     wrapped.modifiers(modifiers)
     this
   }
@@ -119,7 +144,8 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @param projection the project document, which may be null.
     * @return this
     */
-  def projection(projection: JsObject): FindBuilder[TResult] = {
+  def projection(projection: JsObject): FindBuilder[TDocument, TResult] = {
+    appliedOperations("projection") = projection
     wrapped.projection(projection)
     this
   }
@@ -131,7 +157,8 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @param sort the sort criteria, which may be null.
     * @return this
     */
-  def sort(sort: JsObject): FindBuilder[TResult] = {
+  def sort(sort: JsObject): FindBuilder[TDocument, TResult] = {
+    appliedOperations("sort") = sort
     wrapped.sort(sort)
     this
   }
@@ -143,7 +170,7 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @param noCursorTimeout true if cursor timeout is disabled
     * @return this
     */
-  def noCursorTimeout(noCursorTimeout: Boolean): FindBuilder[TResult] = {
+  def noCursorTimeout(noCursorTimeout: Boolean): FindBuilder[TDocument, TResult] = {
     wrapped.noCursorTimeout(noCursorTimeout)
     this
   }
@@ -154,7 +181,7 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @param oplogReplay if oplog replay is enabled
     * @return this
     */
-  def oplogReplay(oplogReplay: Boolean): FindBuilder[TResult] = {
+  def oplogReplay(oplogReplay: Boolean): FindBuilder[TDocument, TResult] = {
     wrapped.oplogReplay(oplogReplay)
     this
   }
@@ -165,7 +192,7 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @param partial if partial results for sharded clusters is enabled
     * @return this
     */
-  def partial(partial: Boolean): FindBuilder[TResult] = {
+  def partial(partial: Boolean): FindBuilder[TDocument, TResult] = {
     wrapped.partial(partial)
     this
   }
@@ -176,7 +203,7 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @param cursorType the cursor type
     * @return this
     */
-  def cursorType(cursorType: CursorType): FindBuilder[TResult] = {
+  def cursorType(cursorType: CursorType): FindBuilder[TDocument, TResult] = {
     wrapped.cursorType(cursorType)
     this
   }
@@ -190,7 +217,7 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @note A null value represents the server default.
     * @note Requires MongoDB 3.4 or greater
     */
-  def collation(collation: Collation): FindBuilder[TResult] = {
+  def collation(collation: Collation): FindBuilder[TDocument, TResult] = {
     wrapped.collation(collation)
     this
   }
@@ -202,7 +229,7 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @return this
     * @since 2.2
     */
-  def comment(comment: String): FindBuilder[TResult] = {
+  def comment(comment: String): FindBuilder[TDocument, TResult] = {
     wrapped.comment(comment)
     this
   }
@@ -214,7 +241,7 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @return this
     * @since 2.2
     */
-  def hint(hint: JsObject): FindBuilder[TResult] = {
+  def hint(hint: JsObject): FindBuilder[TDocument, TResult] = {
     wrapped.hint(hint)
     this
   }
@@ -226,7 +253,8 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @return this
     * @since 2.2
     */
-  def max(max: JsObject): FindBuilder[TResult] = {
+  def max(max: JsObject): FindBuilder[TDocument, TResult] = {
+    appliedOperations("max") = max
     wrapped.max(max)
     this
   }
@@ -238,7 +266,8 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @return this
     * @since 2.2
     */
-  def min(min: JsObject): FindBuilder[TResult] = {
+  def min(min: JsObject): FindBuilder[TDocument, TResult] = {
+    appliedOperations("min") = min
     wrapped.min(min)
     this
   }
@@ -252,7 +281,8 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @return this
     * @since 2.2
     */
-  def maxScan(maxScan: Long): FindBuilder[TResult] = {
+  def maxScan(maxScan: Long): FindBuilder[TDocument, TResult] = {
+    appliedOperations("maxScan") = maxScan
     wrapped.maxScan(maxScan)
     this
   }
@@ -264,7 +294,7 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @return this
     * @since 2.2
     */
-  def returnKey(returnKey: Boolean): FindBuilder[TResult] = {
+  def returnKey(returnKey: Boolean): FindBuilder[TDocument, TResult] = {
     wrapped.returnKey(returnKey)
     this
   }
@@ -276,7 +306,7 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @return this
     * @since 2.2
     */
-  def showRecordId(showRecordId: Boolean): FindBuilder[TResult] = {
+  def showRecordId(showRecordId: Boolean): FindBuilder[TDocument, TResult] = {
     wrapped.showRecordId(showRecordId)
     this
   }
@@ -290,7 +320,7 @@ case class FindBuilder[TResult](private val wrapped: FindIterable[TResult]) {
     * @return this
     * @since 2.2
     */
-  def snapshot(snapshot: Boolean): FindBuilder[TResult] = {
+  def snapshot(snapshot: Boolean): FindBuilder[TDocument, TResult] = {
     wrapped.snapshot(snapshot)
     this
   }
