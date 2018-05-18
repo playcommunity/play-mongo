@@ -1,0 +1,11 @@
+- projection for case class
+  - return specified fields
+  - return case class's fields
+
+- query builder
+
+- Single Collection Inheritance (with a discriminator field)
+
+- how to deal with 1-1, 1-n, n-n ?
+
+

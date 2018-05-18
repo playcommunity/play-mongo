@@ -16,8 +16,6 @@ package cn.playscala.mongo.reactivestream
  * limitations under the License.
  */
 
-package rxStreams
-
 import java.util.concurrent.atomic.AtomicBoolean
 import com.mongodb.async.client.{Observable, Observer, Subscription}
 import scala.language.implicitConversions

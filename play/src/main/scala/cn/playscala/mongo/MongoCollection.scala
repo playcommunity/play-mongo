@@ -2,14 +2,14 @@ package cn.playscala.mongo
 
 import java.util
 
+import cn.playscala.mongo.annotations.Entity
+import cn.playscala.mongo.client.{ClientSession, FindBuilder}
 import cn.playscala.mongo.internal.DefaultHelper.DefaultsTo
 import cn.playscala.mongo.internal.AsyncResultHelper._
 import com.mongodb.async.SingleResultCallback
-import com.mongodb.async.client.ChangeStreamIterable
 import com.mongodb.bulk.BulkWriteResult
 import com.mongodb.client.model._
 import com.mongodb.client.result.{DeleteResult, UpdateResult}
-import com.mongodb.session.ClientSession
 import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
 import org.bson.BsonDocument
 import org.bson.codecs.configuration.CodecRegistry
@@ -20,7 +20,11 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
-import play.api.libs.json.{JsObject, JsValue}
+import play.api.libs.json.{JsObject, Json}
+import cn.playscala.mongo.codecs.Implicits.toBsonDocument
+import cn.playscala.mongo.internal.{CodecHelper, ReflectHelper}
+
+import scala.reflect.runtime.universe._
 
 /**
  * The MongoCollection representation.
@@ -29,7 +33,12 @@ import play.api.libs.json.{JsObject, JsValue}
  * @tparam TDocument The type that this collection will encode documents from and decode documents to.
  * @since 1.0
  */
-case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) {
+case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], preFilter: JsObject = Json.obj()) {
+
+  val hasPreFilter: Boolean = preFilter.fields.headOption.nonEmpty
+
+  def withPreFilter(filter: JsObject): JsObject = if (hasPreFilter) { Json.obj("$and" -> Json.arr(preFilter, filter)) } else { filter }
+
   /**
    * Gets the namespace of this collection.
    *
@@ -233,22 +242,71 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    *
    * [[http://docs.mongodb.org/manual/tutorial/query-documents/ Find]]
    *
-   * @tparam C   the target document type of the observable.
-   * @return the find Observable
+   * @tparam C   the target document type.
+   * @return the FindBuilder
    */
-  def find[C]()(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): Future[List[C]] =
-    toFuture(wrapped.find[C](ct))
+  def find[C]()(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): FindBuilder[C] = {
+    if (!hasPreFilter) {
+      FindBuilder(wrapped.find[C](ct))
+    } else {
+      FindBuilder(wrapped.find[C](preFilter, ct))
+    }
+  }
 
   /**
    * Finds all documents in the collection.
    *
    * [[http://docs.mongodb.org/manual/tutorial/query-documents/ Find]]
    * @param filter the query filter
-   * @tparam C    the target document type of the observable.
-   * @return the find Observable
+   * @tparam C    the target document type.
+   * @return the future of result list.
    */
-  def find[C](filter: JsValue)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): Future[List[C]] =
-    toFuture[C](wrapped.find(BsonDocument.parse(filter.toString()), ct))
+  def find[C](filter: JsObject)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): FindBuilder[C] = {
+    if (!hasPreFilter) {
+      FindBuilder(wrapped.find(filter, ct))
+    } else {
+      FindBuilder(wrapped.find(withPreFilter(filter), ct))
+    }
+  }
+
+  def fetch[R](field: String)(implicit mClassTag: ClassTag[TDocument], mTypeTag: TypeTag[TDocument], rClassTag: ClassTag[R], rTypeTag: TypeTag[R]): Future[List[(TDocument, List[R])]] = {
+    val rFieldSuffix = "___"
+    val rField1 = s"${field}${rFieldSuffix}"
+    aggregate[BsonDocument](
+      Seq(
+        Json.obj("$lookup" -> Json.obj(
+          "from" -> Mongo.getCollectionName(rTypeTag),
+          "localField" -> field,
+          "foreignField" -> "_id",
+          "as" -> rField1
+        ))
+      )
+    ).map{ list =>
+      list.map{ bsonDoc =>
+        val model = CodecHelper.decodeBsonDocument(bsonDoc, codecRegistry.get(mClassTag))
+        val relateModels = bsonDoc.getArray(rField1).getValues.asScala.toList.map{ bsonVal =>
+          CodecHelper.decodeBsonDocument(bsonVal.asInstanceOf[BsonDocument], codecRegistry.get(rClassTag))
+        }
+        (model, relateModels)
+      }
+    }
+  }
+
+  /**
+   * Finds all documents in the collection.
+   *
+   * [[http://docs.mongodb.org/manual/tutorial/query-documents/ Find]]
+   * @param filter the query filter
+   * @tparam C    the target document type.
+   * @return the future of result list.
+   */
+  def find[C](filter: JsObject, projection: JsObject)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): FindBuilder[C] = {
+    if (!hasPreFilter) {
+      find[C](filter).projection(projection)
+    } else {
+      find[C](withPreFilter(filter)).projection(projection)
+    }
+  }
 
   /**
    * Finds all documents in the collection.
@@ -261,8 +319,13 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def find[C](clientSession: ClientSession)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): Future[List[C]] =
-    toFuture(wrapped.find[C](clientSession, ct))
+  def find[C](clientSession: ClientSession)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): FindBuilder[C] = {
+    if (!hasPreFilter) {
+      FindBuilder(wrapped.find[C](clientSession, ct))
+    } else {
+      FindBuilder(wrapped.find[C](clientSession, preFilter, ct))
+    }
+  }
 
   /**
    * Finds all documents in the collection.
@@ -275,8 +338,32 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def find[C](clientSession: ClientSession, filter: Bson)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): Future[List[C]] =
-    toFuture(wrapped.find(clientSession, filter, ct))
+  def find[C](clientSession: ClientSession, filter: JsObject)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): FindBuilder[C] = {
+    if (!hasPreFilter) {
+      FindBuilder(wrapped.find(clientSession, filter, ct))
+    } else {
+      FindBuilder(wrapped.find(clientSession, withPreFilter(filter), ct))
+    }
+  }
+
+  /**
+   * Finds all documents in the collection.
+   *
+   * [[http://docs.mongodb.org/manual/tutorial/query-documents/ Find]]
+   * @param clientSession the client session with which to associate this operation
+   * @param filter the query filter
+   * @tparam C    the target document type of the observable.
+   * @return the find Observable
+   * @since 2.2
+   * @note Requires MongoDB 3.6 or greater
+   */
+  def find[C](clientSession: ClientSession, filter: JsObject, projection: JsObject)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): FindBuilder[C] = {
+    if (!hasPreFilter) {
+      find[C](clientSession, filter).projection(projection)
+    } else {
+      find[C](clientSession, withPreFilter(filter)).projection(projection)
+    }
+  }
 
   /**
    * Aggregates documents according to the specified aggregation pipeline.
@@ -285,8 +372,8 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    * @return a Observable containing the result of the aggregation operation
    *         [[http://docs.mongodb.org/manual/aggregation/ Aggregation]]
    */
-  def aggregate[C](pipeline: Seq[Bson])(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): Future[List[C]] =
-    toFuture(wrapped.aggregate[C](pipeline.asJava, ct))
+  def aggregate[C](pipeline: Seq[JsObject])(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): Future[List[C]] =
+    toFuture(wrapped.aggregate[C](pipeline.map(toBsonDocument).asJava, ct))
 
   /**
    * Aggregates documents according to the specified aggregation pipeline.

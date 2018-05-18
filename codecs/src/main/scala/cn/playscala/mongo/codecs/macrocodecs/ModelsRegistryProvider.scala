@@ -35,12 +35,14 @@ object ModelsRegistryProvider {
       import ${pkgSymbol}._
       import cn.playscala.mongo.codecs.Macros.createCodecProvider
       import org.bson.codecs.configuration.CodecRegistries.fromProviders
+      import cn.playscala.mongo.Mongo
 
       if (${classList.nonEmpty}) {
-        Some(fromProviders(..${classList.map(c => q"$c")}))
-      } else {
-        None
+        val r = fromProviders(..${classList.map(c => q"$c")})
+        Mongo.addCodecRegistry(r)
       }
+
+      Mongo
      """
   }
 

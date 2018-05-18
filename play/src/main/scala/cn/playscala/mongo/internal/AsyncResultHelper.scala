@@ -21,6 +21,20 @@ object AsyncResultHelper {
     promise.future
   }
 
+  def toOptionFuture[TResult](block: SingleResultCallback[TResult] => Unit): Future[Option[TResult]] = {
+    val promise = Promise[Option[TResult]]()
+    block { (document: TResult, t: Throwable) =>
+      if (t != null) {
+        promise.failure(t)
+      } else if (document != null) {
+        promise.success(Some(document))
+      } else {
+        promise.success(None)
+      }
+    }
+    promise.future
+  }
+
   def toFuture[TResult](iterable: MongoIterable[TResult]): Future[List[TResult]] = {
     val promise = Promise[List[TResult]]()
     iterable.into(ListBuffer[TResult]().asJava, (result: java.util.List[TResult], t: Throwable) => {

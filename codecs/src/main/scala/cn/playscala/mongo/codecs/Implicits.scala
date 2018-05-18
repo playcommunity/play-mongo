@@ -1,8 +1,10 @@
 package cn.playscala.mongo.codecs
 
+import cn.playscala.mongo.codecs.json.JsObjectCodec
 import org.bson._
 import org.bson.types.Decimal128
 import play.api.libs.json._
+
 import scala.collection.JavaConverters._
 
 object Implicits {
@@ -17,4 +19,9 @@ object Implicits {
       case JsNull  => new BsonNull()
     }
   }
+
+  implicit def toBsonDocument(jsObject: JsObject): BsonDocument = {
+    new BsonDocument(jsObject.fields.map(f => new BsonElement(f._1, toBsonValue(f._2))).asJava)
+  }
+
 }

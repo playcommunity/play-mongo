@@ -1,7 +1,7 @@
 package cn.playscala.mongo
 
 import akka.stream.scaladsl.Source
-import cn.playscala.mongo.reactivestream.rxStreams.Implicits.ObservableToPublisher
+import cn.playscala.mongo.reactivestream.Implicits.ObservableToPublisher
 import com.mongodb.async.client.{ChangeStreamIterable, Observable, Observables}
 import com.mongodb.client.model.changestream.{ChangeStreamDocument, FullDocument}
 import org.reactivestreams.Publisher
