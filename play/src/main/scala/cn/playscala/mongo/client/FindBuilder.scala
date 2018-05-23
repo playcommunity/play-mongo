@@ -2,33 +2,85 @@ package cn.playscala.mongo.client
 
 import java.util.concurrent.TimeUnit
 
-import cn.playscala.mongo.MongoCollection
+import cn.playscala.mongo.{Mongo, MongoCollection}
 import com.mongodb.async.SingleResultCallback
 import com.mongodb.async.client.FindIterable
-import play.api.libs.json.JsObject
+import play.api.libs.json.{JsObject, Json}
 import cn.playscala.mongo.codecs.Implicits.toBsonDocument
 
 import scala.concurrent.Future
 import cn.playscala.mongo.internal.AsyncResultHelper._
+import cn.playscala.mongo.internal.CodecHelper
 import com.mongodb.CursorType
-
+import org.bson.BsonDocument
+import org.bson.conversions.Bson
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
+import scala.collection.JavaConverters._
+import cn.playscala.mongo._
 
 /**
-  *
+  * FindBuilder
   * @param wrapped
   * @param collection
   * @tparam TResult the target result type.
   */
-case class FindBuilder[TResult:ClassTag:TypeTag](private val wrapped: FindIterable[TResult], collection: MongoCollection[_])(implicit ct: ClassTag[TResult], tt: TypeTag[TResult]) {
+case class FindBuilder[TResult:ClassTag:TypeTag](private val wrapped: FindIterable[TResult], private val collection: MongoCollection[_]) {
   val appliedOperations = mutable.Map.empty[String, Any]
 
-  def fetch[R](field: String)(implicit ct: ClassTag[R], tt: TypeTag[R]): AggregateBuilder[TResult, R] = {
-    AggregateBuilder[TResult, R](collection, field)
+  def this(wrapped: FindIterable[TResult], collection: MongoCollection[_], clientSession: ClientSession) {
+    this(wrapped, collection)
+    appliedOperations("session") = clientSession
+  }
+
+  def this(wrapped: FindIterable[TResult], collection: MongoCollection[_], clientSession: ClientSession, filter: JsObject) {
+    this(wrapped, collection)
+    appliedOperations("filter") = filter
+    appliedOperations("session") = clientSession
+  }
+
+  def this(wrapped: FindIterable[TResult], collection: MongoCollection[_], clientSession: ClientSession, filter: JsObject, projection: JsObject) {
+    this(wrapped, collection)
+    appliedOperations("session") = clientSession
+    appliedOperations("filter") = filter
+    appliedOperations("projection") = projection
+  }
+
+  def this(wrapped: FindIterable[TResult], collection: MongoCollection[_], filter: JsObject) {
+    this(wrapped, collection)
+    appliedOperations("filter") = filter
+  }
+
+  def this(wrapped: FindIterable[TResult], collection: MongoCollection[_], filter: JsObject, projection: JsObject) {
+    this(wrapped, collection)
+    appliedOperations("filter") = filter
+    appliedOperations("projection") = projection
+  }
+
+  def fetch[R:ClassTag:TypeTag](field: String): FetchBuilder[TResult, R] = {
+    val stages = ListBuffer[JsObject]()
+    // build stages
+    appliedOperations.get("projection").foreach(projection => stages += Json.obj("$project" -> projection.asInstanceOf[JsObject]))
+    appliedOperations.get("filter").foreach(filter => stages += Json.obj("$match" -> filter.asInstanceOf[JsObject]))
+    appliedOperations.get("sort").foreach(sort => stages += Json.obj("$sort" -> sort.asInstanceOf[JsObject]))
+    appliedOperations.get("skip").foreach(skip => stages += Json.obj("$skip" -> skip.asInstanceOf[Int]))
+    appliedOperations.get("limit").foreach(limit => stages += Json.obj("$limit" -> limit.asInstanceOf[Int]))
+
+    val rFieldSuffix = "___"
+    val rField1 = s"${field}${rFieldSuffix}"
+
+    stages += Json.obj("$lookup" -> Json.obj(
+      "from" -> Mongo.getCollectionName(implicitly[TypeTag[R]]),
+      "localField" -> field,
+      "foreignField" -> "_id",
+      "as" -> rField1
+    ))
+
+    FetchBuilder[TResult, R](collection.aggregate[BsonDocument](stages), rField1)
   }
 
   /**

@@ -114,18 +114,8 @@ case class MongoDatabase(val wrapped: JMongoDatabase) {
    * @tparam TDocument       the type of the class to use.
    * @return the collection
    */
-  def getCollection[TDocument](collectionName: String)(implicit e: TDocument DefaultsTo JsObject, ct: ClassTag[TDocument]): MongoCollection[TDocument] =
-    MongoCollection(wrapped.getCollection(collectionName, ct))
-
-  /**
-   * Gets a collection, with a specific default document class and a pre-filter.
-   *
-   * @param collectionName the name of the collection to return
-   * @tparam TDocument       the type of the class to use.
-   * @return the collection
-   */
-  def getCollection[TDocument](collectionName: String, preFilter: JsObject)(implicit e: TDocument DefaultsTo JsObject, ct: ClassTag[TDocument]): MongoCollection[TDocument] =
-    MongoCollection(wrapped.getCollection(collectionName, ct), preFilter)
+  def getCollection[TDocument:ClassTag](collectionName: String)(implicit e: TDocument DefaultsTo JsObject): MongoCollection[TDocument] =
+    MongoCollection(wrapped.getCollection(collectionName, implicitly[ClassTag[TDocument]]))
 
   /**
    * Executes command in the context of the current database using the primary server.

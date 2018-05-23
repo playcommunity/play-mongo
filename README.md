@@ -4,9 +4,35 @@ It's designed based on [official mongodb scala driver](https://github.com/mongod
 
 - take the stability of official mongodb driver
 - auto generate the codecs of user's models
-- preFilter used for Single Collection Inheritance
 - dsl for building queries
 - relation mapping
+
+## Create
+```
+mongo.insert[Order](Order("0", Nil))
+```
+
+## Update
+```
+mongo.update[Order](Json.obj("_id" -> "0"), Json.obj("$set" -> ...))
+```
+
+## Query
+```
+mongo.find[Order](Json.obj("_id" -> "0")).first
+```
+
+## Delete
+```
+mongo.remove[Order](Json.obj("_id" -> "0"))
+```
+
+## Useful 
+```
+mongo.database
+mongo.collection("colName")
+```
+
 
  
 

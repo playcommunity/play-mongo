@@ -14,7 +14,7 @@ import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
 import org.bson.BsonDocument
 import org.bson.codecs.configuration.CodecRegistry
 import org.bson.conversions.Bson
-import com.mongodb.async.client.{ChangeStreamIterable, MongoCollection => JMongoCollection}
+import com.mongodb.async.client.{AggregateIterable, ChangeStreamIterable, MongoCollection => JMongoCollection}
 
 import scala.concurrent.Future
 import scala.reflect.ClassTag
@@ -33,11 +33,7 @@ import scala.reflect.runtime.universe._
  * @tparam TDocument The type that this collection will encode documents from and decode documents to.
  * @since 1.0
  */
-case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], preFilter: JsObject = Json.obj()) {
-
-  val hasPreFilter: Boolean = preFilter.fields.headOption.nonEmpty
-
-  def withPreFilter(filter: JsObject): JsObject = if (hasPreFilter) { Json.obj("$and" -> Json.arr(preFilter, filter)) } else { filter }
+case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) {
 
   /**
    * Gets the namespace of this collection.
@@ -137,7 +133,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @param filter the query filter
    * @return a Observable with a single element indicating the number of documents
    */
-  def count(filter: Bson): Future[Long] = toFuture[java.lang.Long](wrapped.count(filter, _: SingleResultCallback[java.lang.Long])).map(_.toLong)
+  def count(filter: JsObject): Future[Long] = toFuture[java.lang.Long](wrapped.count(filter, _: SingleResultCallback[java.lang.Long])).map(_.toLong)
 
   /**
    * Counts the number of documents in the collection according to the given options.
@@ -146,7 +142,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @param options the options describing the count
    * @return a Observable with a single element indicating the number of documents
    */
-  def count(filter: Bson, options: CountOptions): Future[Long] =
+  def count(filter: JsObject, options: CountOptions): Future[Long] =
     toFuture[java.lang.Long](wrapped.count(filter, options, _: SingleResultCallback[java.lang.Long])).map(_.toLong)
 
   /**
@@ -169,7 +165,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def count(clientSession: ClientSession, filter: Bson): Future[Long] =
+  def count(clientSession: ClientSession, filter: JsObject): Future[Long] =
     toFuture[java.lang.Long](wrapped.count(clientSession, filter, _: SingleResultCallback[java.lang.Long])).map(_.toLong)
 
   /**
@@ -182,7 +178,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def count(clientSession: ClientSession, filter: Bson, options: CountOptions): Future[Long] =
+  def count(clientSession: ClientSession, filter: JsObject, options: CountOptions): Future[Long] =
     toFuture[java.lang.Long](wrapped.count(clientSession, filter, options, _: SingleResultCallback[java.lang.Long])).map(_.toLong)
 
   /**
@@ -205,7 +201,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @tparam C       the target type of the observable.
    * @return a Observable emitting the sequence of distinct values
    */
-  def distinct[C](fieldName: String, filter: Bson)(implicit ct: ClassTag[C]): Future[List[C]] =
+  def distinct[C](fieldName: String, filter: JsObject)(implicit ct: ClassTag[C]): Future[List[C]] =
     toFuture(wrapped.distinct(fieldName, filter, ct))
 
   /**
@@ -234,7 +230,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def distinct[C](clientSession: ClientSession, fieldName: String, filter: Bson)(implicit ct: ClassTag[C]): Future[List[C]] =
+  def distinct[C](clientSession: ClientSession, fieldName: String, filter: JsObject)(implicit ct: ClassTag[C]): Future[List[C]] =
     toFuture(wrapped.distinct(clientSession, fieldName, filter, ct))
 
   /**
@@ -246,11 +242,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @return the FindBuilder
    */
   def find[C]()(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): FindBuilder[C] = {
-    if (!hasPreFilter) {
-      FindBuilder(wrapped.find[C](ct), this)
-    } else {
-      FindBuilder(wrapped.find[C](preFilter, ct), this)
-    }
+    FindBuilder(wrapped.find[C](ct), this)
   }
 
   /**
@@ -262,13 +254,10 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @return the future of result list.
    */
   def find[C](filter: JsObject)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): FindBuilder[C] = {
-    if (!hasPreFilter) {
-      FindBuilder(wrapped.find(filter, ct), this)
-    } else {
-      FindBuilder(wrapped.find(withPreFilter(filter), ct), this)
-    }
+    new FindBuilder(wrapped.find(filter, ct), this, filter)
   }
 
+  /*
   def fetch[R](field: String)(implicit mClassTag: ClassTag[TDocument], mTypeTag: TypeTag[TDocument], rClassTag: ClassTag[R], rTypeTag: TypeTag[R]): Future[List[(TDocument, List[R])]] = {
     val rFieldSuffix = "___"
     val rField1 = s"${field}${rFieldSuffix}"
@@ -291,6 +280,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
       }
     }
   }
+  */
 
   /**
    * Finds all documents in the collection.
@@ -301,11 +291,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @return the future of result list.
    */
   def find[C](filter: JsObject, projection: JsObject)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): FindBuilder[C] = {
-    if (!hasPreFilter) {
-      find[C](filter).projection(projection)
-    } else {
-      find[C](withPreFilter(filter)).projection(projection)
-    }
+    new FindBuilder(wrapped.find(filter, ct), this, filter, projection)
   }
 
   /**
@@ -320,11 +306,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @note Requires MongoDB 3.6 or greater
    */
   def find[C](clientSession: ClientSession)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): FindBuilder[C] = {
-    if (!hasPreFilter) {
-      FindBuilder(wrapped.find[C](clientSession, ct), this)
-    } else {
-      FindBuilder(wrapped.find[C](clientSession, preFilter, ct), this)
-    }
+    new FindBuilder(wrapped.find[C](clientSession, ct), this, clientSession)
   }
 
   /**
@@ -339,11 +321,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @note Requires MongoDB 3.6 or greater
    */
   def find[C](clientSession: ClientSession, filter: JsObject)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): FindBuilder[C] = {
-    if (!hasPreFilter) {
-      FindBuilder(wrapped.find(clientSession, filter, ct), this)
-    } else {
-      FindBuilder(wrapped.find(clientSession, withPreFilter(filter), ct), this)
-    }
+    new FindBuilder(wrapped.find(clientSession, filter, ct), this, clientSession, filter)
   }
 
   /**
@@ -358,11 +336,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @note Requires MongoDB 3.6 or greater
    */
   def find[C](clientSession: ClientSession, filter: JsObject, projection: JsObject)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): FindBuilder[C] = {
-    if (!hasPreFilter) {
-      find[C](clientSession, filter).projection(projection)
-    } else {
-      find[C](clientSession, withPreFilter(filter)).projection(projection)
-    }
+    new FindBuilder(wrapped.find(clientSession, filter, ct), this, clientSession, filter, projection)
   }
 
   /**
@@ -372,8 +346,8 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @return a Observable containing the result of the aggregation operation
    *         [[http://docs.mongodb.org/manual/aggregation/ Aggregation]]
    */
-  def aggregate[C](pipeline: Seq[JsObject])(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): Future[List[C]] =
-    toFuture(wrapped.aggregate[C](pipeline.map(toBsonDocument).asJava, ct))
+  def aggregate[C](pipeline: Seq[JsObject])(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): AggregateIterable[C] =
+    wrapped.aggregate[C](pipeline.map(toBsonDocument).asJava, ct)
 
   /**
    * Aggregates documents according to the specified aggregation pipeline.
@@ -385,8 +359,8 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def aggregate[C](clientSession: ClientSession, pipeline: Seq[Bson])(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): Future[List[C]] =
-    toFuture(wrapped.aggregate[C](clientSession, pipeline.asJava, ct))
+  def aggregate[C](clientSession: ClientSession, pipeline: Seq[Bson])(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): AggregateIterable[C] =
+    wrapped.aggregate[C](clientSession, pipeline.asJava, ct)
 
   /**
    * Aggregates documents according to the specified map-reduce function.
@@ -580,7 +554,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @param filter the query filter to apply the the delete operation
    * @return a Observable with a single element the DeleteResult or with an com.mongodb.MongoException
    */
-  def deleteOne(filter: Bson): Future[DeleteResult] = toFuture(wrapped.deleteOne(filter, _: SingleResultCallback[DeleteResult]))
+  def deleteOne(filter: JsObject): Future[DeleteResult] = toFuture(wrapped.deleteOne(filter, _: SingleResultCallback[DeleteResult]))
 
   /**
    * Removes at most one document from the collection that matches the given filter.  If no documents match, the collection is not
@@ -591,7 +565,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @return a Observable with a single element the DeleteResult or with an com.mongodb.MongoException
    * @since 1.2
    */
-  def deleteOne(filter: Bson, options: DeleteOptions): Future[DeleteResult] =
+  def deleteOne(filter: JsObject, options: DeleteOptions): Future[DeleteResult] =
     toFuture(wrapped.deleteOne(filter, options, _: SingleResultCallback[DeleteResult]))
 
   /**
@@ -604,7 +578,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def deleteOne(clientSession: ClientSession, filter: Bson): Future[DeleteResult] =
+  def deleteOne(clientSession: ClientSession, filter: JsObject): Future[DeleteResult] =
     toFuture(wrapped.deleteOne(clientSession, filter, _: SingleResultCallback[DeleteResult]))
 
   /**
@@ -618,7 +592,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def deleteOne(clientSession: ClientSession, filter: Bson, options: DeleteOptions): Future[DeleteResult] =
+  def deleteOne(clientSession: ClientSession, filter: JsObject, options: DeleteOptions): Future[DeleteResult] =
     toFuture(wrapped.deleteOne(clientSession, filter, options, _: SingleResultCallback[DeleteResult]))
 
   /**
@@ -627,7 +601,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @param filter the query filter to apply the the delete operation
    * @return a Observable with a single element the DeleteResult or with an com.mongodb.MongoException
    */
-  def deleteMany(filter: Bson): Future[DeleteResult] = toFuture(wrapped.deleteMany(filter, _: SingleResultCallback[DeleteResult]))
+  def deleteMany(filter: JsObject): Future[DeleteResult] = toFuture(wrapped.deleteMany(filter, _: SingleResultCallback[DeleteResult]))
 
   /**
    * Removes all documents from the collection that match the given query filter.  If no documents match, the collection is not modified.
@@ -637,7 +611,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @return a Observable with a single element the DeleteResult or with an com.mongodb.MongoException
    * @since 1.2
    */
-  def deleteMany(filter: Bson, options: DeleteOptions): Future[DeleteResult] =
+  def deleteMany(filter: JsObject, options: DeleteOptions): Future[DeleteResult] =
     toFuture(wrapped.deleteMany(filter, options, _: SingleResultCallback[DeleteResult]))
 
   /**
@@ -649,7 +623,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def deleteMany(clientSession: ClientSession, filter: Bson): Future[DeleteResult] =
+  def deleteMany(clientSession: ClientSession, filter: JsObject): Future[DeleteResult] =
     toFuture(wrapped.deleteMany(clientSession, filter, _: SingleResultCallback[DeleteResult]))
 
   /**
@@ -662,7 +636,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def deleteMany(clientSession: ClientSession, filter: Bson, options: DeleteOptions): Future[DeleteResult] =
+  def deleteMany(clientSession: ClientSession, filter: JsObject, options: DeleteOptions): Future[DeleteResult] =
     toFuture(wrapped.deleteMany(clientSession, filter, options, _: SingleResultCallback[DeleteResult]))
 
   /**
@@ -673,7 +647,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @param replacement the replacement document
    * @return a Observable with a single element the UpdateResult
    */
-  def replaceOne(filter: Bson, replacement: TDocument): Future[UpdateResult] =
+  def replaceOne(filter: JsObject, replacement: TDocument): Future[UpdateResult] =
     toFuture(wrapped.replaceOne(filter, replacement, _: SingleResultCallback[UpdateResult]))
 
   /**
@@ -685,7 +659,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @param options     the options to apply to the replace operation
    * @return a Observable with a single element the UpdateResult
    */
-  def replaceOne(filter: Bson, replacement: TDocument, options: UpdateOptions): Future[UpdateResult] =
+  def replaceOne(filter: JsObject, replacement: TDocument, options: UpdateOptions): Future[UpdateResult] =
     toFuture(wrapped.replaceOne(filter, replacement, options, _: SingleResultCallback[UpdateResult]))
 
   /**
@@ -699,7 +673,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def replaceOne(clientSession: ClientSession, filter: Bson, replacement: TDocument): Future[UpdateResult] =
+  def replaceOne(clientSession: ClientSession, filter: JsObject, replacement: TDocument): Future[UpdateResult] =
     toFuture(wrapped.replaceOne(clientSession, filter, replacement, _: SingleResultCallback[UpdateResult]))
 
   /**
@@ -714,7 +688,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def replaceOne(clientSession: ClientSession, filter: Bson, replacement: TDocument, options: UpdateOptions): Future[UpdateResult] =
+  def replaceOne(clientSession: ClientSession, filter: JsObject, replacement: TDocument, options: UpdateOptions): Future[UpdateResult] =
     toFuture(wrapped.replaceOne(clientSession, filter, replacement, options, _: SingleResultCallback[UpdateResult]))
 
   /**
@@ -728,7 +702,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    *                can be of any type for which a `Codec` is registered
    * @return a Observable with a single element the UpdateResult
    */
-  def updateOne(filter: Bson, update: Bson): Future[UpdateResult] =
+  def updateOne(filter: JsObject, update: JsObject): Future[UpdateResult] =
     toFuture(wrapped.updateOne(filter, update, _: SingleResultCallback[UpdateResult]))
 
   /**
@@ -743,7 +717,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @param options the options to apply to the update operation
    * @return a Observable with a single element the UpdateResult
    */
-  def updateOne(filter: Bson, update: Bson, options: UpdateOptions): Future[UpdateResult] =
+  def updateOne(filter: JsObject, update: JsObject, options: UpdateOptions): Future[UpdateResult] =
     toFuture(wrapped.updateOne(filter, update, options, _: SingleResultCallback[UpdateResult]))
 
   /**
@@ -760,7 +734,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def updateOne(clientSession: ClientSession, filter: Bson, update: Bson): Future[UpdateResult] =
+  def updateOne(clientSession: ClientSession, filter: JsObject, update: JsObject): Future[UpdateResult] =
     toFuture(wrapped.updateOne(clientSession, filter, update, _: SingleResultCallback[UpdateResult]))
 
   /**
@@ -778,7 +752,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def updateOne(clientSession: ClientSession, filter: Bson, update: Bson, options: UpdateOptions): Future[UpdateResult] =
+  def updateOne(clientSession: ClientSession, filter: JsObject, update: JsObject, options: UpdateOptions): Future[UpdateResult] =
     toFuture(wrapped.updateOne(clientSession, filter, update, options, _: SingleResultCallback[UpdateResult]))
 
   /**
@@ -792,7 +766,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    *                can be of any type for which a `Codec` is registered
    * @return a Observable with a single element the UpdateResult
    */
-  def updateMany(filter: Bson, update: Bson): Future[UpdateResult] =
+  def updateMany(filter: JsObject, update: JsObject): Future[UpdateResult] =
     toFuture(wrapped.updateMany(filter, update, _: SingleResultCallback[UpdateResult]))
 
   /**
@@ -807,7 +781,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @param options the options to apply to the update operation
    * @return a Observable with a single element the UpdateResult
    */
-  def updateMany(filter: Bson, update: Bson, options: UpdateOptions): Future[UpdateResult] =
+  def updateMany(filter: JsObject, update: JsObject, options: UpdateOptions): Future[UpdateResult] =
     toFuture(wrapped.updateMany(filter, update, options, _: SingleResultCallback[UpdateResult]))
 
   /**
@@ -824,7 +798,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def updateMany(clientSession: ClientSession, filter: Bson, update: Bson): Future[UpdateResult] =
+  def updateMany(clientSession: ClientSession, filter: JsObject, update: JsObject): Future[UpdateResult] =
     toFuture(wrapped.updateMany(clientSession, filter, update, _: SingleResultCallback[UpdateResult]))
 
   /**
@@ -842,7 +816,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def updateMany(clientSession: ClientSession, filter: Bson, update: Bson, options: UpdateOptions): Future[UpdateResult] =
+  def updateMany(clientSession: ClientSession, filter: JsObject, update: JsObject, options: UpdateOptions): Future[UpdateResult] =
     toFuture(wrapped.updateMany(clientSession, filter, update, options, _: SingleResultCallback[UpdateResult]))
 
   /**
@@ -852,7 +826,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @return a Observable with a single element the document that was removed.  If no documents matched the query filter, then null will be
    *         returned
    */
-  def findOneAndDelete(filter: Bson): Future[TDocument] = toFuture(wrapped.findOneAndDelete(filter, _: SingleResultCallback[TDocument]))
+  def findOneAndDelete(filter: JsObject): Future[TDocument] = toFuture(wrapped.findOneAndDelete(filter, _: SingleResultCallback[TDocument]))
 
   /**
    * Atomically find a document and remove it.
@@ -862,7 +836,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @return a Observable with a single element the document that was removed.  If no documents matched the query filter, then null will be
    *         returned
    */
-  def findOneAndDelete(filter: Bson, options: FindOneAndDeleteOptions): Future[TDocument] =
+  def findOneAndDelete(filter: JsObject, options: FindOneAndDeleteOptions): Future[TDocument] =
     toFuture(wrapped.findOneAndDelete(filter, options, _: SingleResultCallback[TDocument]))
 
   /**
@@ -875,7 +849,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def findOneAndDelete(clientSession: ClientSession, filter: Bson): Future[TDocument] =
+  def findOneAndDelete(clientSession: ClientSession, filter: JsObject): Future[TDocument] =
     toFuture(wrapped.findOneAndDelete(clientSession, filter, _: SingleResultCallback[TDocument]))
 
   /**
@@ -889,7 +863,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def findOneAndDelete(clientSession: ClientSession, filter: Bson, options: FindOneAndDeleteOptions): Future[TDocument] =
+  def findOneAndDelete(clientSession: ClientSession, filter: JsObject, options: FindOneAndDeleteOptions): Future[TDocument] =
     toFuture(wrapped.findOneAndDelete(clientSession, filter, options, _: SingleResultCallback[TDocument]))
 
   /**
@@ -901,7 +875,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    *         property, this will either be the document as it was before the update or as it is after the update.  If no documents matched the
    *         query filter, then null will be returned
    */
-  def findOneAndReplace(filter: Bson, replacement: TDocument): Future[TDocument] =
+  def findOneAndReplace(filter: JsObject, replacement: TDocument): Future[TDocument] =
     toFuture(wrapped.findOneAndReplace(filter, replacement, _: SingleResultCallback[TDocument]))
 
   /**
@@ -914,7 +888,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    *         property, this will either be the document as it was before the update or as it is after the update.  If no documents matched the
    *         query filter, then null will be returned
    */
-  def findOneAndReplace(filter: Bson, replacement: TDocument, options: FindOneAndReplaceOptions): Future[TDocument] =
+  def findOneAndReplace(filter: JsObject, replacement: TDocument, options: FindOneAndReplaceOptions): Future[TDocument] =
     toFuture(wrapped.findOneAndReplace(filter, replacement, options, _: SingleResultCallback[TDocument]))
 
   /**
@@ -929,7 +903,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def findOneAndReplace(clientSession: ClientSession, filter: Bson, replacement: TDocument): Future[TDocument] =
+  def findOneAndReplace(clientSession: ClientSession, filter: JsObject, replacement: TDocument): Future[TDocument] =
     toFuture(wrapped.findOneAndReplace(clientSession, filter, replacement, _: SingleResultCallback[TDocument]))
 
   /**
@@ -945,7 +919,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def findOneAndReplace(clientSession: ClientSession, filter: Bson, replacement: TDocument, options: FindOneAndReplaceOptions): Future[TDocument] =
+  def findOneAndReplace(clientSession: ClientSession, filter: JsObject, replacement: TDocument, options: FindOneAndReplaceOptions): Future[TDocument] =
     toFuture(wrapped.findOneAndReplace(clientSession, filter, replacement, options, _: SingleResultCallback[TDocument]))
 
   /**
@@ -959,7 +933,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    *         property, this will either be the document as it was before the update or as it is after the update.  If no documents matched the
    *         query filter, then null will be returned
    */
-  def findOneAndUpdate(filter: Bson, update: Bson): Future[TDocument] =
+  def findOneAndUpdate(filter: JsObject, update: JsObject): Future[TDocument] =
     toFuture(wrapped.findOneAndUpdate(filter, update, _: SingleResultCallback[TDocument]))
 
   /**
@@ -974,7 +948,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    *         property, this will either be the document as it was before the update or as it is after the update.  If no documents matched the
    *         query filter, then null will be returned
    */
-  def findOneAndUpdate(filter: Bson, update: Bson, options: FindOneAndUpdateOptions): Future[TDocument] =
+  def findOneAndUpdate(filter: JsObject, update: JsObject, options: FindOneAndUpdateOptions): Future[TDocument] =
     toFuture(wrapped.findOneAndUpdate(filter, update, options, _: SingleResultCallback[TDocument]))
 
   /**
@@ -991,7 +965,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def findOneAndUpdate(clientSession: ClientSession, filter: Bson, update: Bson): Future[TDocument] =
+  def findOneAndUpdate(clientSession: ClientSession, filter: JsObject, update: JsObject): Future[TDocument] =
     toFuture(wrapped.findOneAndUpdate(clientSession, filter, update, _: SingleResultCallback[TDocument]))
 
   /**
@@ -1009,7 +983,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def findOneAndUpdate(clientSession: ClientSession, filter: Bson, update: Bson, options: FindOneAndUpdateOptions): Future[TDocument] =
+  def findOneAndUpdate(clientSession: ClientSession, filter: JsObject, update: JsObject, options: FindOneAndUpdateOptions): Future[TDocument] =
     toFuture(wrapped.findOneAndUpdate(clientSession, filter, update, options, _: SingleResultCallback[TDocument]))
 
   /**
@@ -1037,7 +1011,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    *                registered
    * @return a Observable with a single element indicating when the operation has completed
    */
-  def createIndex(key: Bson): Future[String] =
+  def createIndex(key: JsObject): Future[String] =
     toFuture(wrapped.createIndex(key, _: SingleResultCallback[String]))
 
   /**
@@ -1047,7 +1021,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @param options the options for the index
    * @return a Observable with a single element indicating when the operation has completed
    */
-  def createIndex(key: Bson, options: IndexOptions): Future[String] =
+  def createIndex(key: JsObject, options: IndexOptions): Future[String] =
     toFuture(wrapped.createIndex(key, options, _: SingleResultCallback[String]))
 
   /**
@@ -1059,7 +1033,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def createIndex(clientSession: ClientSession, key: Bson): Future[String] =
+  def createIndex(clientSession: ClientSession, key: JsObject): Future[String] =
     toFuture(wrapped.createIndex(clientSession, key, _: SingleResultCallback[String]))
 
   /**
@@ -1072,7 +1046,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def createIndex(clientSession: ClientSession, key: Bson, options: IndexOptions): Future[String] =
+  def createIndex(clientSession: ClientSession, key: JsObject, options: IndexOptions): Future[String] =
     toFuture(wrapped.createIndex(clientSession, key, options, _: SingleResultCallback[String]))
 
   /**
@@ -1174,7 +1148,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @param keys the keys of the index to remove
    * @return a Observable with a single element indicating when the operation has completed
    */
-  def dropIndex(keys: Bson): Future[Void] = toFuture(wrapped.dropIndex(keys, _: SingleResultCallback[Void]))
+  def dropIndex(keys: JsObject): Future[Void] = toFuture(wrapped.dropIndex(keys, _: SingleResultCallback[Void]))
 
   /**
    * Drops the index given the keys used to create it.
@@ -1184,7 +1158,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @return a Observable with a single element indicating when the operation has completed
    * @since 2.2
    */
-  def dropIndex(keys: Bson, dropIndexOptions: DropIndexOptions): Future[Void] =
+  def dropIndex(keys: JsObject, dropIndexOptions: DropIndexOptions): Future[Void] =
     toFuture(wrapped.dropIndex(keys, dropIndexOptions, _: SingleResultCallback[Void]))
 
   /**
@@ -1223,7 +1197,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def dropIndex(clientSession: ClientSession, keys: Bson): Future[Void] =
+  def dropIndex(clientSession: ClientSession, keys: JsObject): Future[Void] =
     toFuture(wrapped.dropIndex(clientSession, keys, _: SingleResultCallback[Void]))
 
   /**
@@ -1236,7 +1210,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument], 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def dropIndex(clientSession: ClientSession, keys: Bson, dropIndexOptions: DropIndexOptions): Future[Void] =
+  def dropIndex(clientSession: ClientSession, keys: JsObject, dropIndexOptions: DropIndexOptions): Future[Void] =
     toFuture(wrapped.dropIndex(clientSession, keys, dropIndexOptions, _: SingleResultCallback[Void]))
 
   /**
