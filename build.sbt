@@ -12,7 +12,7 @@ organizationName := "cn.playscala"
 val PlayVersion = playVersion(sys.env.getOrElse("PLAY_VERSION", "2.6.12"))
 
 // Dependencies
-val mongodbDriver  = "org.mongodb" % "mongodb-driver-async" % "3.6.3"
+val mongodbDriver  = "org.mongodb" % "mongodb-driver-async" % "3.7.0"
 val reactiveStream = "org.reactivestreams" % "reactive-streams" % "1.0.2"
 val scalaReflect   = "org.scala-lang" % "scala-reflect" % "2.12.4"
 val scalaMeta = "org.scalameta" %% "scalameta" % "3.7.3"

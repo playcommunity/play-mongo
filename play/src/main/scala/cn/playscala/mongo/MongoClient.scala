@@ -24,11 +24,10 @@ import cn.playscala.mongo.internal.AsyncResultHelper._
 import cn.playscala.mongo.internal.DefaultHelper.DefaultsTo
 import com.mongodb.async.SingleResultCallback
 import com.mongodb.async.client.{MongoClientSettings, MongoClients, MongoClient => JMongoClient}
-import com.mongodb.client.MongoDriverInformation
 import com.mongodb.connection._
 import com.mongodb.connection.netty.NettyStreamFactoryFactory
 import com.mongodb.session.ClientSession
-import com.mongodb.{ClientSessionOptions, ConnectionString}
+import com.mongodb.{ClientSessionOptions, ConnectionString, MongoDriverInformation}
 import org.bson.codecs.configuration.CodecRegistries._
 import org.bson.codecs.configuration.CodecRegistry
 import play.api.libs.json.JsObject
