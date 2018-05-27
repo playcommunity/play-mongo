@@ -5,6 +5,7 @@ import javax.inject.Singleton
 import cn.playscala.mongo.{MongoClient, MongoConfig, MongoDatabase}
 import cn.playscala.mongo.annotations.Entity
 import cn.playscala.mongo.client.{ClientSession, FindBuilder}
+import cn.playscala.mongo.codecs.IterableCodecProvider
 import cn.playscala.mongo.codecs.json.JsonCodecProvider
 import cn.playscala.mongo.codecs.macrocodecs.ModelsRegistryProvider
 import cn.playscala.mongo.codecs.time.JOffsetDateTimeCodec
@@ -19,11 +20,12 @@ import org.bson.codecs.configuration.CodecRegistry
 import org.bson.codecs.configuration.CodecRegistries.{fromCodecs, fromProviders, fromRegistries}
 import org.bson.conversions.Bson
 import play.api.libs.json.JsObject
+
 import scala.annotation.compileTimeOnly
 import scala.concurrent.Future
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.{ TypeTag, Literal, Constant, typeOf }
+import scala.reflect.runtime.universe.{Constant, Literal, TypeTag, typeOf}
 
 object Mongo {
   @volatile private var collectionNameMap: Map[String, String] = Map.empty[String, String]
@@ -33,7 +35,8 @@ object Mongo {
   @volatile var codecRegistry: CodecRegistry = fromRegistries(
     MongoClients.getDefaultCodecRegistry,
     fromProviders(new JsonCodecProvider()),
-    fromCodecs(new JOffsetDateTimeCodec)
+    fromCodecs(new JOffsetDateTimeCodec),
+    fromProviders(IterableCodecProvider())
   )
 
   def addCodecRegistry(registry: CodecRegistry): Mongo.type = {

@@ -4,7 +4,7 @@ import org.bson.BsonType
 import org.bson.BsonType.{DECIMAL128, _}
 import org.bson.codecs.Codec
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
-import play.api.libs.json._
+import play.api.libs.json.{JsNull, _}
 
 /**
   * A {@code CodecProvider} for all subclass of JsValue.
@@ -25,7 +25,7 @@ object JsonCodecProvider {
     DOUBLE -> new JsDoubleCodec,
     INT32 -> new JsInt32Codec,
     INT64 -> new JsInt64Codec,
-    DECIMAL128 -> new JsDoubleCodec,
+    DECIMAL128 -> new JDecimalCodec,
     MAX_KEY -> new JMaxKeyCodec,
     MIN_KEY -> new JMinKeyCodec,
     JAVASCRIPT -> new JJavaScriptCodec,
@@ -43,11 +43,8 @@ object JsonCodecProvider {
     JsNull.getClass.asInstanceOf[Class[JsNull.type]] -> new JsNullCodec,
     classOf[JsArray] -> new JsArrayCodec,
     classOf[JsBoolean] -> new JsBooleanCodec,
-    classOf[JsNumber] -> new JsDoubleCodec,
+    classOf[JsNumber] -> new JDecimalCodec,
     classOf[JsObject] -> new JsObjectCodec,
-    classOf[JsNumber] -> new JsDoubleCodec,
-    classOf[JsNumber] -> new JsInt64Codec,
-    classOf[JsNumber] -> new JsDoubleCodec,
     classOf[JsString] -> new JsStringCodec
   )
 

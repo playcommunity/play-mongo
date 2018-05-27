@@ -17,6 +17,7 @@
 package cn.playscala.mongo.codecs.macrocodecs
 
 import scala.reflect.macros.whitebox
+
 import org.bson.codecs.configuration.{ CodecProvider, CodecRegistry }
 
 private[codecs] object CaseClassProvider {

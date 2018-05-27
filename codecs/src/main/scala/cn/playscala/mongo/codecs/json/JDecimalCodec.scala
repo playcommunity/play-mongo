@@ -5,7 +5,7 @@ import org.bson.types.Decimal128
 import org.bson.{BsonReader, BsonWriter}
 import play.api.libs.json.JsNumber
 
-class JsNumberCodec extends Codec[JsNumber] {
+class JDecimalCodec extends Codec[JsNumber] {
 
   override def decode(reader: BsonReader, decoderContext: DecoderContext): JsNumber = {
     JsNumber(reader.readDecimal128().bigDecimalValue())

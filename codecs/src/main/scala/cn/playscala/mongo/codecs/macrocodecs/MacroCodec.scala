@@ -18,9 +18,12 @@ package cn.playscala.mongo.codecs.macrocodecs
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+
 import org.bson._
 import org.bson.codecs.configuration.{ CodecRegistries, CodecRegistry }
 import org.bson.codecs.{ Codec, DecoderContext, Encoder, EncoderContext }
+
+import org.bson.BsonNull
 
 /**
  *
@@ -80,8 +83,7 @@ trait MacroCodec[T] extends Codec[T] {
   lazy val hasClassFieldName: Boolean = caseClassesMap.size > 1
   lazy val caseClassesMapInv: Map[Class[_], String] = caseClassesMap.map(_.swap)
   protected val registry: CodecRegistry = CodecRegistries.fromRegistries(List(codecRegistry, CodecRegistries.fromCodecs(this)).asJava)
-  // TODO
-  protected val bsonNull = null
+  protected val bsonNull = new BsonNull()
 
   override def encode(writer: BsonWriter, value: T, encoderContext: EncoderContext): Unit = {
     if (value == null) { // scalastyle:ignore
