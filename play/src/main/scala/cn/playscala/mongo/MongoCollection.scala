@@ -1,8 +1,6 @@
 package cn.playscala.mongo
 
 import java.util
-
-import cn.playscala.mongo.annotations.Entity
 import cn.playscala.mongo.client.{ClientSession, FindBuilder}
 import cn.playscala.mongo.internal.DefaultHelper.DefaultsTo
 import cn.playscala.mongo.internal.AsyncResultHelper._
@@ -11,19 +9,15 @@ import com.mongodb.bulk.BulkWriteResult
 import com.mongodb.client.model._
 import com.mongodb.client.result.{DeleteResult, UpdateResult}
 import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
-import org.bson.BsonDocument
 import org.bson.codecs.configuration.CodecRegistry
 import org.bson.conversions.Bson
-import com.mongodb.async.client.{AggregateIterable, ChangeStreamIterable, MongoCollection => JMongoCollection}
-
+import com.mongodb.async.client.{AggregateIterable, MongoCollection => JMongoCollection}
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsObject}
 import cn.playscala.mongo.codecs.Implicits.toBsonDocument
-import cn.playscala.mongo.internal.{CodecHelper, ReflectHelper}
-
 import scala.reflect.runtime.universe._
 
 /**
@@ -359,8 +353,8 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def aggregate[C](clientSession: ClientSession, pipeline: Seq[Bson])(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): AggregateIterable[C] =
-    wrapped.aggregate[C](clientSession, pipeline.asJava, ct)
+  def aggregate[C](clientSession: ClientSession, pipeline: Seq[JsObject])(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): AggregateIterable[C] =
+    wrapped.aggregate[C](clientSession, pipeline.map(toBsonDocument).asJava, ct)
 
   /**
    * Aggregates documents according to the specified map-reduce function.
@@ -1326,8 +1320,8 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def watch[C](pipeline: Seq[Bson])(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): ChangeStreamIterable[C] =
-    wrapped.watch(pipeline.asJava, ct)
+  def watch[C](pipeline: Seq[JsObject])(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): ChangeStream[C] =
+    ChangeStream(wrapped.watch(pipeline.map(b => toBsonDocument(b)).asJava, ct))
 
   /**
    * Creates a change stream for this collection.
@@ -1338,8 +1332,8 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def watch[C](clientSession: ClientSession)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): ChangeStreamIterable[C] =
-    wrapped.watch(clientSession, ct)
+  def watch[C](clientSession: ClientSession)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): ChangeStream[C] =
+    ChangeStream(wrapped.watch(clientSession, ct))
 
   /**
    * Creates a change stream for this collection.
@@ -1351,7 +1345,7 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def watch[C](clientSession: ClientSession, pipeline: Seq[Bson])(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): ChangeStreamIterable[C] =
-    wrapped.watch(clientSession, pipeline.asJava, ct)
+  def watch[C](clientSession: ClientSession, pipeline: Seq[JsObject])(implicit e: C DefaultsTo TDocument, ct: ClassTag[C]): ChangeStream[C] =
+    ChangeStream(wrapped.watch(clientSession, pipeline.map(b => toBsonDocument(b)).asJava, ct))
 
 }
