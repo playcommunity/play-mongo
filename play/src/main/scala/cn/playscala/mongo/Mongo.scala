@@ -1,14 +1,12 @@
 package cn.playscala.mongo
 
-import javax.inject.Singleton
-
 import cn.playscala.mongo.{MongoClient, MongoConfig, MongoDatabase}
 import cn.playscala.mongo.annotations.Entity
 import cn.playscala.mongo.client.{ClientSession, FindBuilder}
 import cn.playscala.mongo.codecs.IterableCodecProvider
 import cn.playscala.mongo.codecs.json.JsonCodecProvider
 import cn.playscala.mongo.codecs.macrocodecs.ModelsRegistryProvider
-import cn.playscala.mongo.codecs.time.JOffsetDateTimeCodec
+import cn.playscala.mongo.codecs.common.{BigDecimalCodec, JOffsetDateTimeCodec}
 import cn.playscala.mongo.gridfs.GridFSBucket
 import cn.playscala.mongo.internal.AsyncResultHelper.toFuture
 import cn.playscala.mongo.internal.DefaultHelper.DefaultsTo
@@ -18,8 +16,7 @@ import com.mongodb.client.model._
 import com.mongodb.client.result.{DeleteResult, UpdateResult}
 import org.bson.codecs.configuration.CodecRegistry
 import org.bson.codecs.configuration.CodecRegistries.{fromCodecs, fromProviders, fromRegistries}
-import org.bson.conversions.Bson
-import play.api.libs.json.JsObject
+import play.api.libs.json.{JsObject, Json, Writes}
 
 import scala.annotation.compileTimeOnly
 import scala.concurrent.Future
@@ -36,6 +33,7 @@ object Mongo {
     MongoClients.getDefaultCodecRegistry,
     fromProviders(new JsonCodecProvider()),
     fromCodecs(new JOffsetDateTimeCodec),
+    fromCodecs(new BigDecimalCodec),
     fromProviders(IterableCodecProvider())
   )
 
@@ -101,6 +99,12 @@ case class Mongo(config: MongoConfig) {
   def find[M](filter: JsObject)(implicit ct: ClassTag[M], tt: TypeTag[M]): FindBuilder[M] = {
     getCollection[M].find[M](filter)
   }
+
+  def findById[M, ID:Writes](id: ID)(implicit ct: ClassTag[M], tt: TypeTag[M]): Future[Option[M]] = find[M](Json.obj("_id" -> Json.toJson(id)(implicitly[Writes[ID]]))).first
+
+  def findById[M](id: String)(implicit ct: ClassTag[M], tt: TypeTag[M]): Future[Option[M]] = find[M](Json.obj("_id" -> id)).first
+
+  def findById[M](id: Long)(implicit ct: ClassTag[M], tt: TypeTag[M]): Future[Option[M]] = find[M](Json.obj("_id" -> id)).first
 
   /**
     * Finds all documents in the collection.
@@ -386,6 +390,11 @@ case class Mongo(config: MongoConfig) {
   def updateMany[M:ClassTag:TypeTag](clientSession: ClientSession, filter: JsObject, update: JsObject, options: UpdateOptions): Future[UpdateResult] =
     getCollection[M].updateMany(clientSession, filter, update, options)
 
+  def deleteById[M:ClassTag:TypeTag](id: String): Future[DeleteResult] =
+    getCollection[M].deleteOne(Json.obj("_id" -> id))
+
+  def deleteById[M:ClassTag:TypeTag](id: Long): Future[DeleteResult] =
+    getCollection[M].deleteOne(Json.obj("_id" -> id))
   /**
     * Removes at most one document from the collection that matches the given filter.  If no documents match, the collection is not
     * modified.
@@ -589,11 +598,18 @@ case class Mongo(config: MongoConfig) {
   /**
     * Get the collection according to it's TypeTag.
     * @tparam M
-    * @return
+    * @return MongoCollection[M]
     */
-  private def getCollection[M:ClassTag:TypeTag]: MongoCollection[M] =
+  def getCollection[M:ClassTag:TypeTag]: MongoCollection[M] =
     database.getCollection[M](Mongo.getCollectionName(implicitly[TypeTag[M]]))
 
+  /**
+    * Get the collection according to it's name.
+    * @param collectionName
+    * @return MongoCollection[JsObject]
+    */
+  def getCollection(collectionName: String): MongoCollection[JsObject] =
+    database.getCollection[JsObject](collectionName)
 
   def close(): Unit = {
     client.close()

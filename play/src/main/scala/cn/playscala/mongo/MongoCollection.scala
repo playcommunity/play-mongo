@@ -1,6 +1,7 @@
 package cn.playscala.mongo
 
 import java.util
+
 import cn.playscala.mongo.client.{ClientSession, FindBuilder}
 import cn.playscala.mongo.internal.DefaultHelper.DefaultsTo
 import cn.playscala.mongo.internal.AsyncResultHelper._
@@ -12,12 +13,13 @@ import com.mongodb.{MongoNamespace, ReadConcern, ReadPreference, WriteConcern}
 import org.bson.codecs.configuration.CodecRegistry
 import org.bson.conversions.Bson
 import com.mongodb.async.client.{AggregateIterable, MongoCollection => JMongoCollection}
+
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
-import play.api.libs.json.{JsObject}
-import cn.playscala.mongo.codecs.Implicits.toBsonDocument
+import play.api.libs.json.{JsObject, Json}
+
 import scala.reflect.runtime.universe._
 
 /**
@@ -237,6 +239,14 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    */
   def find[C]()(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): FindBuilder[C] = {
     FindBuilder(wrapped.find[C](ct), this)
+  }
+
+  def findById[C](id: String)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): FindBuilder[C] = {
+    new FindBuilder(wrapped.find(Json.obj("_id" -> id), ct), this, Json.obj("_id" -> id))
+  }
+
+  def findById[C](id: Long)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): FindBuilder[C] = {
+    new FindBuilder(wrapped.find(Json.obj("_id" -> id), ct), this, Json.obj("_id" -> id))
   }
 
   /**
@@ -540,6 +550,10 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    */
   def insertMany(clientSession: ClientSession, documents: Seq[_ <: TDocument], options: InsertManyOptions): Future[Void] =
     toFuture(wrapped.insertMany(clientSession, documents.asJava, options, _: SingleResultCallback[Void]))
+
+  def deleteById(id: String): Future[DeleteResult] = toFuture(wrapped.deleteOne(Json.obj("_id" -> id), _: SingleResultCallback[DeleteResult]))
+
+  def deleteById(id: Long): Future[DeleteResult] = toFuture(wrapped.deleteOne(Json.obj("_id" -> id), _: SingleResultCallback[DeleteResult]))
 
   /**
    * Removes at most one document from the collection that matches the given filter.  If no documents match, the collection is not

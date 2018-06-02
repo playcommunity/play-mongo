@@ -1,4 +1,4 @@
-package cn.playscala.mongo.codecs.time
+package cn.playscala.mongo.codecs.common
 
 import java.time.{Instant, OffsetDateTime, ZoneId}
 

@@ -12,9 +12,10 @@ import org.bson.types.ObjectId
 
 import scala.concurrent.Future
 import cn.playscala.mongo.internal.AsyncResultHelper._
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, JsString, Json}
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import cn.playscala.mongo._
 
 /**
   * A factory for GridFSBucket instances.
@@ -42,6 +43,33 @@ object GridFSBucket {
 }
 
 class GridFSBucket(val wrapped: JGridFSBucket) {
+
+  /**
+    * Finds all documents in the files collection.
+    *
+    * @return the GridFS find iterable interface
+    * @see [[http://docs.mongodb.org/manual/tutorial/query-documents/ Find]]
+    */
+  def find(): GridFSFindBuilder = GridFSFindBuilder(wrapped.find(), this)
+
+  /**
+    * Finds all documents in the collection that match the filter.
+    *
+    * Below is an example of filtering against the filename and some nested metadata that can also be stored along with the file data:
+    *
+    * `
+    * Filters.and(Filters.eq("filename", "mongodb.png"), Filters.eq("metadata.contentType", "image/png"));
+    * `
+    *
+    * @param filter the query filter
+    * @return the GridFS find iterable interface
+    * @see com.mongodb.client.model.Filters
+    */
+  def find(filter: JsObject): GridFSFindBuilder = GridFSFindBuilder(wrapped.find(filter), this)
+
+  def findById(fileId: String): Future[Option[GridFSFile]] = GridFSFindBuilder(wrapped.find(Json.obj("_id" -> fileId)), this).first
+
+  def deleteById(fileId: String): Future[Void] = toFuture(wrapped.delete(JsString(fileId), _: SingleResultCallback[Void]))
 
   /**
     * Upload a file to GridFS

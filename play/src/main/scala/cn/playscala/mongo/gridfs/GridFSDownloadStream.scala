@@ -16,11 +16,9 @@ class GridFSDownloadStream(wrapped: JGridFSDownloadStream) {
   private val isReadable = new AtomicBoolean(true)
   private val DEFAULT_BATCH_SIZE = 255 * 1024
 
-  def getGridFSFile: Future[GridFSFile] = {
-    toFuture(wrapped.getGridFSFile(_: SingleResultCallback[JGridFSFile])).map(f => new GridFSFile(f))
-  }
-
   def toIterator: Iterator[Future[ByteBuffer]] = {
+    wrapped.batchSize(DEFAULT_BATCH_SIZE)
+
     new Iterator[Future[ByteBuffer]]() {
       override def hasNext: Boolean = isReadable.get()
       override def next(): Future[ByteBuffer] = {
@@ -35,6 +33,7 @@ class GridFSDownloadStream(wrapped: JGridFSDownloadStream) {
           }
         }
       }
+
     }
   }
 

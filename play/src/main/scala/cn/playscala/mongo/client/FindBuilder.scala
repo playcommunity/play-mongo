@@ -1,13 +1,10 @@
 package cn.playscala.mongo.client
 
 import java.util.concurrent.TimeUnit
-
 import cn.playscala.mongo.{Mongo, MongoCollection}
 import com.mongodb.async.SingleResultCallback
 import com.mongodb.async.client.FindIterable
 import play.api.libs.json.{JsObject, Json}
-import cn.playscala.mongo.codecs.Implicits.toBsonDocument
-
 import scala.concurrent.Future
 import cn.playscala.mongo.internal.AsyncResultHelper._
 import cn.playscala.mongo.internal.CodecHelper
@@ -57,6 +54,7 @@ case class FindBuilder[TResult:ClassTag:TypeTag](private val wrapped: FindIterab
 
   def this(wrapped: FindIterable[TResult], collection: MongoCollection[_], filter: JsObject, projection: JsObject) {
     this(wrapped, collection)
+    wrapped.projection(projection)
     appliedOperations("filter") = filter
     appliedOperations("projection") = projection
   }
@@ -96,7 +94,7 @@ case class FindBuilder[TResult:ClassTag:TypeTag](private val wrapped: FindIterab
     *
     * @return a future which will return the first item
     */
-  def first(): Future[Option[TResult]] = toOptionFuture(wrapped.first(_: SingleResultCallback[TResult]))
+  def first: Future[Option[TResult]] = toOptionFuture(wrapped.first(_: SingleResultCallback[TResult]))
 
   /**
     * Sets the query filter to apply to the query.

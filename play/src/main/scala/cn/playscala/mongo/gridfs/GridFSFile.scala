@@ -5,7 +5,7 @@ import com.mongodb.client.gridfs.model.{GridFSFile => JGridFSFile}
 import org.bson.{BsonObjectId, BsonString, BsonValue, Document}
 import play.api.libs.json.{JsObject, Json}
 
-class GridFSFile(wrapped: JGridFSFile) {
+case class GridFSFile(wrapped: JGridFSFile, gridFSBucket: GridFSBucket) {
   /**
     * The {@link BsonValue} id for this file.
     *
@@ -71,5 +71,7 @@ class GridFSFile(wrapped: JGridFSFile) {
       ""
     }
   }
+
+  def stream: GridFSDownloadStream = gridFSBucket.openDownloadStream(getId)
 
 }

@@ -19,7 +19,7 @@ package cn.playscala.mongo
 import java.io.Closeable
 
 import cn.playscala.mongo.codecs.json.JsonCodecProvider
-import cn.playscala.mongo.codecs.time.JOffsetDateTimeCodec
+import cn.playscala.mongo.codecs.common.JOffsetDateTimeCodec
 import cn.playscala.mongo.internal.AsyncResultHelper._
 import cn.playscala.mongo.internal.DefaultHelper.DefaultsTo
 import com.mongodb.async.SingleResultCallback
