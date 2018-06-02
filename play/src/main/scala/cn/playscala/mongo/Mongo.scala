@@ -164,6 +164,70 @@ case class Mongo(config: MongoConfig) {
   }
 
   /**
+    * Atomically find a document and update it.
+    *
+    * @param filter  a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
+    *                registered
+    * @param update  a document describing the update, which may not be null. The update to apply must include only update operators. This
+    *                can be of any type for which a `Codec` is registered
+    * @return a Observable with a single element the document that was updated.  Depending on the value of the `returnOriginal`
+    *         property, this will either be the document as it was before the update or as it is after the update.  If no documents matched the
+    *         query filter, then null will be returned
+    */
+  def findOneAndUpdate[M:ClassTag:TypeTag](filter: JsObject, update: JsObject): Future[M] =
+    getCollection[M].findOneAndUpdate(filter, update)
+
+  /**
+    * Atomically find a document and update it.
+    *
+    * @param filter  a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
+    *                registered
+    * @param update  a document describing the update, which may not be null. The update to apply must include only update operators. This
+    *                can be of any type for which a `Codec` is registered
+    * @param options the options to apply to the operation
+    * @return a Observable with a single element the document that was updated.  Depending on the value of the `returnOriginal`
+    *         property, this will either be the document as it was before the update or as it is after the update.  If no documents matched the
+    *         query filter, then null will be returned
+    */
+  def findOneAndUpdate[M:ClassTag:TypeTag](filter: JsObject, update: JsObject, options: FindOneAndUpdateOptions): Future[M] =
+    getCollection[M].findOneAndUpdate(filter, update, options)
+
+  /**
+    * Atomically find a document and update it.
+    *
+    * @param clientSession the client session with which to associate this operation
+    * @param filter  a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
+    *                registered
+    * @param update  a document describing the update, which may not be null. The update to apply must include only update operators. This
+    *                can be of any type for which a `Codec` is registered
+    * @return a Observable with a single element the document that was updated.  Depending on the value of the `returnOriginal`
+    *         property, this will either be the document as it was before the update or as it is after the update.  If no documents matched the
+    *         query filter, then null will be returned
+    * @since 2.2
+    * @note Requires MongoDB 3.6 or greater
+    */
+  def findOneAndUpdate[M:ClassTag:TypeTag](clientSession: ClientSession, filter: JsObject, update: JsObject): Future[M] =
+    getCollection[M].findOneAndUpdate(clientSession, filter, update)
+
+  /**
+    * Atomically find a document and update it.
+    *
+    * @param clientSession the client session with which to associate this operation
+    * @param filter  a document describing the query filter, which may not be null. This can be of any type for which a `Codec` is
+    *                registered
+    * @param update  a document describing the update, which may not be null. The update to apply must include only update operators. This
+    *                can be of any type for which a `Codec` is registered
+    * @param options the options to apply to the operation
+    * @return a Observable with a single element the document that was updated.  Depending on the value of the `returnOriginal`
+    *         property, this will either be the document as it was before the update or as it is after the update.  If no documents matched the
+    *         query filter, then null will be returned
+    * @since 2.2
+    * @note Requires MongoDB 3.6 or greater
+    */
+  def findOneAndUpdate[M:ClassTag:TypeTag](clientSession: ClientSession, filter: JsObject, update: JsObject, options: FindOneAndUpdateOptions): Future[M] =
+    getCollection[M].findOneAndUpdate(clientSession, filter, update, options)
+
+  /**
     * Inserts the provided document. If the document is missing an identifier, the driver should generate one.
     *
     * @param document the document to insert
@@ -276,6 +340,9 @@ case class Mongo(config: MongoConfig) {
   def updateOne[M:ClassTag:TypeTag](filter: JsObject, update: JsObject): Future[UpdateResult] =
     getCollection[M].updateOne(filter, update)
 
+  def updateOne[M:ClassTag:TypeTag](filter: JsObject, update: JsObject, upsert: Boolean): Future[UpdateResult] =
+    getCollection[M].updateOne(filter, update, new UpdateOptions().upsert(upsert))
+
   /**
     * Update a single document in the collection according to the specified arguments.
     *
@@ -307,6 +374,9 @@ case class Mongo(config: MongoConfig) {
     */
   def updateOne[M:ClassTag:TypeTag](clientSession: ClientSession, filter: JsObject, update: JsObject): Future[UpdateResult] =
     getCollection[M].updateOne(clientSession, filter, update)
+
+  def updateOne[M:ClassTag:TypeTag](clientSession: ClientSession, filter: JsObject, update: JsObject, upsert: Boolean): Future[UpdateResult] =
+    getCollection[M].updateOne(clientSession, filter, update, new UpdateOptions().upsert(upsert))
 
   /**
     * Update a single document in the collection according to the specified arguments.
@@ -340,6 +410,9 @@ case class Mongo(config: MongoConfig) {
   def updateMany[M:ClassTag:TypeTag](filter: JsObject, update: JsObject): Future[UpdateResult] =
     getCollection[M].updateMany(filter, update)
 
+  def updateMany[M:ClassTag:TypeTag](filter: JsObject, update: JsObject, upsert: Boolean): Future[UpdateResult] =
+    getCollection[M].updateMany(filter, update, new UpdateOptions().upsert(upsert))
+
   /**
     * Update a single document in the collection according to the specified arguments.
     *
@@ -369,8 +442,8 @@ case class Mongo(config: MongoConfig) {
     * @since 2.2
     * @note Requires MongoDB 3.6 or greater
     */
-  def updateMany[M:ClassTag:TypeTag](clientSession: ClientSession, filter: JsObject, update: JsObject): Future[UpdateResult] =
-    getCollection[M].updateMany(clientSession, filter, update)
+  def updateMany[M:ClassTag:TypeTag](clientSession: ClientSession, filter: JsObject, update: JsObject, upsert: Boolean): Future[UpdateResult] =
+    getCollection[M].updateMany(clientSession, filter, update, new UpdateOptions().upsert(upsert))
 
   /**
     * Update a single document in the collection according to the specified arguments.

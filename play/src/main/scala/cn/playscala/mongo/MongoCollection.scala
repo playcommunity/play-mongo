@@ -241,12 +241,12 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
     FindBuilder(wrapped.find[C](ct), this)
   }
 
-  def findById[C](id: String)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): FindBuilder[C] = {
-    new FindBuilder(wrapped.find(Json.obj("_id" -> id), ct), this, Json.obj("_id" -> id))
+  def findById[C](id: String)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): Future[Option[C]] = {
+    new FindBuilder(wrapped.find(Json.obj("_id" -> id), ct), this, Json.obj("_id" -> id)).first
   }
 
-  def findById[C](id: Long)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): FindBuilder[C] = {
-    new FindBuilder(wrapped.find(Json.obj("_id" -> id), ct), this, Json.obj("_id" -> id))
+  def findById[C](id: Long)(implicit e: C DefaultsTo TDocument, ct: ClassTag[C], tt: TypeTag[C]): Future[Option[C]] = {
+    new FindBuilder(wrapped.find(Json.obj("_id" -> id), ct), this, Json.obj("_id" -> id)).first
   }
 
   /**
@@ -713,6 +713,10 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
   def updateOne(filter: JsObject, update: JsObject): Future[UpdateResult] =
     toFuture(wrapped.updateOne(filter, update, _: SingleResultCallback[UpdateResult]))
 
+
+  def updateOne(filter: JsObject, update: JsObject, upsert: Boolean): Future[UpdateResult] =
+    toFuture(wrapped.updateOne(filter, update, new UpdateOptions().upsert(upsert), _: SingleResultCallback[UpdateResult]))
+
   /**
    * Update a single document in the collection according to the specified arguments.
    *
@@ -744,6 +748,9 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    */
   def updateOne(clientSession: ClientSession, filter: JsObject, update: JsObject): Future[UpdateResult] =
     toFuture(wrapped.updateOne(clientSession, filter, update, _: SingleResultCallback[UpdateResult]))
+
+  def updateOne(clientSession: ClientSession, filter: JsObject, update: JsObject, upsert: Boolean): Future[UpdateResult] =
+    toFuture(wrapped.updateOne(clientSession, filter, update, new UpdateOptions().upsert(upsert), _: SingleResultCallback[UpdateResult]))
 
   /**
    * Update a single document in the collection according to the specified arguments.
@@ -777,6 +784,9 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
   def updateMany(filter: JsObject, update: JsObject): Future[UpdateResult] =
     toFuture(wrapped.updateMany(filter, update, _: SingleResultCallback[UpdateResult]))
 
+  def updateMany(filter: JsObject, update: JsObject, upsert: Boolean): Future[UpdateResult] =
+    toFuture(wrapped.updateMany(filter, update, new UpdateOptions().upsert(upsert), _: SingleResultCallback[UpdateResult]))
+
   /**
    * Update a single document in the collection according to the specified arguments.
    *
@@ -808,6 +818,9 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    */
   def updateMany(clientSession: ClientSession, filter: JsObject, update: JsObject): Future[UpdateResult] =
     toFuture(wrapped.updateMany(clientSession, filter, update, _: SingleResultCallback[UpdateResult]))
+
+  def updateMany(clientSession: ClientSession, filter: JsObject, update: JsObject, upsert: Boolean): Future[UpdateResult] =
+    toFuture(wrapped.updateMany(clientSession, filter, update, new UpdateOptions().upsert(upsert), _: SingleResultCallback[UpdateResult]))
 
   /**
    * Update a single document in the collection according to the specified arguments.

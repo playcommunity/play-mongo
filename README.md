@@ -74,7 +74,7 @@ mongo.find[User](Json.obj("_id" -> "0")).first()
 
 ## 文件上传和下载
 ```
-mongo.gridFSBucket.uploadFromFile(new File("./kf.jpg"), "image/jpg").map{ fileId =>
+mongo.gridFSBucket.uploadFromFile("kf.jpg", "image/jpg", new File("./kf.jpg")).map{ fileId =>
   Ok(fileId)
 }
 
