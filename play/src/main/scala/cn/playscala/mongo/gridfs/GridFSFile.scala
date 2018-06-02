@@ -68,7 +68,7 @@ case class GridFSFile(wrapped: JGridFSFile, gridFSBucket: GridFSBucket) {
     if (metadata != null && metadata.containsKey("contentType")) {
       metadata.getString("contentType")
     } else {
-      ""
+      "application/octet-stream"
     }
   }
 

@@ -1,7 +1,6 @@
 package cn.playscala.mongo.gridfs
 
 import java.io.{File, FileInputStream, InputStream}
-
 import cn.playscala.mongo.MongoDatabase
 import com.mongodb.async.SingleResultCallback
 import com.mongodb.async.client.gridfs.helpers.AsyncStreamHelper.toAsyncInputStream
@@ -9,11 +8,9 @@ import com.mongodb.async.client.gridfs.{GridFSBuckets, GridFSBucket => JGridFSBu
 import com.mongodb.session.ClientSession
 import org.bson.BsonString
 import org.bson.types.ObjectId
-
 import scala.concurrent.Future
 import cn.playscala.mongo.internal.AsyncResultHelper._
 import play.api.libs.json.{JsObject, JsString, Json}
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import cn.playscala.mongo._
 
@@ -78,42 +75,89 @@ class GridFSBucket(val wrapped: JGridFSBucket) {
     * @return the file_id
     */
   def uploadFromFile(file: File): Future[String] = {
-    uploadFromFile(None, None, None, file, None)
+    uploadFromFile(None, None, file.getName, "application/octet-stream", file, GridFSUploadOptions())
   }
 
   /**
     * Upload a file to GridFS
     *
     * @param file   the file to upload
-    * @param options  the GridFSUploadOptions
+    * @param fileName the file name
     * @return the file_id
     */
-  def uploadFromFile(file: File, options: GridFSUploadOptions): Future[String] = {
-    uploadFromFile(None, None, None, file, Some(options))
+  def uploadFromFile(fileName: String, file: File): Future[String] = {
+    uploadFromFile(None, None, fileName, "application/octet-stream", file, GridFSUploadOptions())
   }
 
   /**
     * Upload a file to GridFS
     *
     * @param file   the file to upload
-    * @param contentType  the content type of the file
+    * @param fileName file name
+    * @param contentType content type
     * @return the file_id
     */
-  def uploadFromFile(file: File, contentType: String): Future[String] = {
-    uploadFromFile(None, None, None, file, Some(GridFSUploadOptions(Json.obj("contentType" -> contentType))))
+  def uploadFromFile(fileName: String, contentType: String, file: File): Future[String] = {
+    uploadFromFile(None, None, fileName, contentType, file, GridFSUploadOptions())
+  }
+
+  /**
+    * Upload a file to GridFS
+    *
+    * @param fileName file name
+    * @param contentType content type
+    * @param file   the file to upload
+    * @param options   upload options
+    * @return the file id
+    */
+  def uploadFromFile(fileName: String, contentType: String, file: File, options: GridFSUploadOptions): Future[String] = {
+    uploadFromFile(None, None, fileName, contentType, file, options)
   }
 
   /**
     * Upload a file to GridFS
     *
     * @param file   the file to upload
-    * @param contentType  the content type of the file
-    * @param options  the GridFSUploadOptions
     * @return the file_id
     */
-  def uploadFromFile(file: File, contentType: String, options: GridFSUploadOptions): Future[String] = {
-    options.getMetadata.put("contentType", contentType)
-    uploadFromFile(None, None, None, file, Some(options))
+  def uploadFromFile(clientSession: ClientSession, file: File): Future[String] = {
+    uploadFromFile(Some(clientSession), None, file.getName, "application/octet-stream", file, GridFSUploadOptions())
+  }
+
+  /**
+    * Upload a file to GridFS
+    *
+    * @param file   the file to upload
+    * @param fileName the file name
+    * @return the file_id
+    */
+  def uploadFromFile(clientSession: ClientSession, fileName: String, file: File): Future[String] = {
+    uploadFromFile(Some(clientSession), None, fileName, "application/octet-stream", file, GridFSUploadOptions())
+  }
+
+  /**
+    * Upload a file to GridFS
+    *
+    * @param file   the file to upload
+    * @param fileName file name
+    * @param contentType content type
+    * @return the file_id
+    */
+  def uploadFromFile(clientSession: ClientSession, fileName: String, contentType: String, file: File): Future[String] = {
+    uploadFromFile(Some(clientSession), None, fileName, contentType, file, GridFSUploadOptions())
+  }
+
+  /**
+    * Upload a file to GridFS
+    *
+    * @param fileName file name
+    * @param contentType content type
+    * @param file   the file to upload
+    * @param options   upload options
+    * @return the file id
+    */
+  def uploadFromFile(clientSession: ClientSession, fileName: String, contentType: String, file: File, options: GridFSUploadOptions): Future[String] = {
+    uploadFromFile(Some(clientSession), None, fileName, contentType, file, options)
   }
 
   /**
@@ -126,16 +170,15 @@ class GridFSBucket(val wrapped: JGridFSBucket) {
     * @param options  the GridFSUploadOptions
     * @return the file_id
     */
-  def uploadFromFile(clientSession: Option[ClientSession], fileId: Option[String], fileName: Option[String], file: File, options: Option[GridFSUploadOptions]): Future[String] = {
+  def uploadFromFile(clientSession: Option[ClientSession], fileId: Option[String], fileName: String, contentType: String, file: File, options: GridFSUploadOptions): Future[String] = {
     val file_id = fileId.getOrElse(ObjectId.get().toHexString)
-    val file_name = fileName.getOrElse(file.getName)
-    val upload_options = options.getOrElse(GridFSUploadOptions())
+    options.wrapped.getMetadata.put("contentType", contentType)
 
     toFuture[Void](clientSession match {
       case Some(cs) =>
-        wrapped.uploadFromStream(cs, new BsonString(file_id), file_name, toAsyncInputStream(new FileInputStream(file)), upload_options, _: SingleResultCallback[Void])
+        wrapped.uploadFromStream(cs, new BsonString(file_id), fileName, toAsyncInputStream(new FileInputStream(file)), options.wrapped, _: SingleResultCallback[Void])
       case None =>
-        wrapped.uploadFromStream(new BsonString(file_id), file_name, toAsyncInputStream(new FileInputStream(file)), upload_options, _: SingleResultCallback[Void])
+        wrapped.uploadFromStream(new BsonString(file_id), fileName, toAsyncInputStream(new FileInputStream(file)), options.wrapped, _: SingleResultCallback[Void])
     }).map(_ => file_id)
   }
 
@@ -145,19 +188,8 @@ class GridFSBucket(val wrapped: JGridFSBucket) {
     * @param inputStream   the input stream to upload
     * @return the file_id
     */
-  def uploadFromInputStream(inputStream: InputStream): Future[String] = {
-    uploadFromInputStream(None, None, None, inputStream, None)
-  }
-
-  /**
-    * Upload to GridFS from an input stream
-    *
-    * @param inputStream   the input stream to upload
-    * @param options  the GridFSUploadOptions
-    * @return the file_id
-    */
-  def uploadFromInputStream(inputStream: InputStream, options: GridFSUploadOptions): Future[String] = {
-    uploadFromInputStream(None, None, None, inputStream, Some(options))
+  def uploadFromInputStream(fileName: String, inputStream: InputStream): Future[String] = {
+    uploadFromInputStream(None, None, fileName, "application/octet-stream", inputStream, GridFSUploadOptions())
   }
 
   /**
@@ -167,8 +199,8 @@ class GridFSBucket(val wrapped: JGridFSBucket) {
     * @param contentType  the content type of the file
     * @return the file_id
     */
-  def uploadFromInputStream(inputStream: InputStream, contentType: String): Future[String] = {
-    uploadFromInputStream(None, None, None, inputStream, Some(GridFSUploadOptions(Json.obj("contentType" -> contentType))))
+  def uploadFromInputStream(fileName: String, contentType: String, inputStream: InputStream): Future[String] = {
+    uploadFromInputStream(None, None, fileName, contentType, inputStream, GridFSUploadOptions())
   }
 
   /**
@@ -179,9 +211,41 @@ class GridFSBucket(val wrapped: JGridFSBucket) {
     * @param options  the GridFSUploadOptions
     * @return the file_id
     */
-  def uploadFromInputStream(inputStream: InputStream, contentType: String, options: GridFSUploadOptions): Future[String] = {
-    options.getMetadata.put("contentType", contentType)
-    uploadFromInputStream(None, None, None, inputStream, Some(options))
+  def uploadFromInputStream(fileName: String, contentType: String, inputStream: InputStream, options: GridFSUploadOptions): Future[String] = {
+    uploadFromInputStream(None, None, fileName, contentType, inputStream, options)
+  }
+
+  /**
+    * Upload to GridFS from an input stream
+    *
+    * @param inputStream   the input stream to upload
+    * @return the file_id
+    */
+  def uploadFromInputStream(clientSession: ClientSession, fileName: String, inputStream: InputStream): Future[String] = {
+    uploadFromInputStream(Some(clientSession), None, fileName, "application/octet-stream", inputStream, GridFSUploadOptions())
+  }
+
+  /**
+    * Upload to GridFS from an input stream
+    *
+    * @param inputStream   the input stream to upload
+    * @param contentType  the content type of the file
+    * @return the file_id
+    */
+  def uploadFromInputStream(clientSession: ClientSession, fileName: String, contentType: String, inputStream: InputStream): Future[String] = {
+    uploadFromInputStream(Some(clientSession), None, fileName, contentType, inputStream, GridFSUploadOptions())
+  }
+
+  /**
+    * Upload to GridFS from an input stream
+    *
+    * @param inputStream   the input stream to upload
+    * @param contentType  the content type of the file
+    * @param options  the GridFSUploadOptions
+    * @return the file_id
+    */
+  def uploadFromInputStream(clientSession: ClientSession, fileName: String, contentType: String, inputStream: InputStream, options: GridFSUploadOptions): Future[String] = {
+    uploadFromInputStream(Some(clientSession), None, fileName, contentType, inputStream, options)
   }
 
   /**
@@ -194,16 +258,15 @@ class GridFSBucket(val wrapped: JGridFSBucket) {
     * @param options  the GridFSUploadOptions
     * @return the file_id
     */
-  def uploadFromInputStream(clientSession: Option[ClientSession], fileId: Option[String], fileName: Option[String], inputStream: InputStream, options: Option[GridFSUploadOptions]): Future[String] = {
+  def uploadFromInputStream(clientSession: Option[ClientSession], fileId: Option[String], fileName: String, contentType: String, inputStream: InputStream, options: GridFSUploadOptions): Future[String] = {
     val file_id = fileId.getOrElse(ObjectId.get().toHexString)
-    val file_name = fileName.getOrElse("")
-    val upload_options = options.getOrElse(new GridFSUploadOptions)
+    options.wrapped.getMetadata.put("contentType", contentType)
 
     toFuture[Void](clientSession match {
       case Some(cs) =>
-        wrapped.uploadFromStream(cs, new BsonString(file_id), file_name, toAsyncInputStream(inputStream), upload_options, _: SingleResultCallback[Void])
+        wrapped.uploadFromStream(cs, new BsonString(file_id), fileName, toAsyncInputStream(inputStream), options.wrapped, _: SingleResultCallback[Void])
       case None =>
-        wrapped.uploadFromStream(new BsonString(file_id), file_name, toAsyncInputStream(inputStream), upload_options, _: SingleResultCallback[Void])
+        wrapped.uploadFromStream(new BsonString(file_id), fileName, toAsyncInputStream(inputStream), options.wrapped, _: SingleResultCallback[Void])
     }).map(_ => file_id)
   }
 
