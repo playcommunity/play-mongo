@@ -10,6 +10,7 @@ import cn.playscala.mongo.codecs.common.{BigDecimalCodec, JOffsetDateTimeCodec}
 import cn.playscala.mongo.gridfs.GridFSBucket
 import cn.playscala.mongo.internal.AsyncResultHelper.toFuture
 import cn.playscala.mongo.internal.DefaultHelper.DefaultsTo
+import cn.playscala.mongo.internal.exception.CollectionNameNotFound
 import com.mongodb.async.SingleResultCallback
 import com.mongodb.async.client.MongoClients
 import com.mongodb.client.model._
@@ -42,20 +43,24 @@ object Mongo {
     this
   }
 
-  def getCollectionName(typeTag: TypeTag[_]): String = {
-    val fullClassName = typeTag.tpe.typeSymbol.fullName
-
-    if (!isDevMode && collectionNameMap.contains(fullClassName)) {
-      collectionNameMap(fullClassName)
+  def getCollectionName(typeTag: TypeTag[_]): Option[String] = {
+    if (typeTag.tpe =:= typeOf[Nothing]) {
+      None
     } else {
-      val parsedName =
-        typeTag.tpe.typeSymbol.annotations.find(_.tree.tpe =:= typeOf[Entity]).map{ annotation =>
-          val Literal(Constant(collectionName: String)) :: Nil = annotation.tree.children.tail
-          collectionName
-        }.getOrElse(typeTag.tpe.typeSymbol.name.toString)
+      val fullClassName = typeTag.tpe.typeSymbol.fullName
 
-      collectionNameMap += (fullClassName -> parsedName)
-      parsedName
+      if (!isDevMode && collectionNameMap.contains(fullClassName)) {
+        Some(collectionNameMap(fullClassName))
+      } else {
+        val parsedName =
+          typeTag.tpe.typeSymbol.annotations.find(_.tree.tpe =:= typeOf[Entity]).map{ annotation =>
+            val Literal(Constant(collectionName: String)) :: Nil = annotation.tree.children.tail
+            collectionName
+          }.getOrElse(typeTag.tpe.typeSymbol.name.toString)
+
+        collectionNameMap += (fullClassName -> parsedName)
+        Some(parsedName)
+      }
     }
   }
 
@@ -325,7 +330,7 @@ case class Mongo(config: MongoConfig) {
     */
   def insertMany[M:ClassTag:TypeTag](clientSession: ClientSession, documents: Seq[_ <: M], options: InsertManyOptions): Future[Void] =
     getCollection[M].insertMany(clientSession, documents, options)
-  
+
   /**
     * Update a single document in the collection according to the specified arguments.
     *
@@ -561,7 +566,7 @@ case class Mongo(config: MongoConfig) {
     */
   def deleteMany[M:ClassTag:TypeTag](clientSession: ClientSession, filter: JsObject, options: DeleteOptions): Future[DeleteResult] =
     getCollection[M].deleteMany(clientSession, filter, options)
-  
+
   def count[M:ClassTag:TypeTag](): Future[Long] = {
     getCollection[M].count()
   }
@@ -673,15 +678,26 @@ case class Mongo(config: MongoConfig) {
     * @tparam M
     * @return MongoCollection[M]
     */
-  def getCollection[M:ClassTag:TypeTag]: MongoCollection[M] =
-    database.getCollection[M](Mongo.getCollectionName(implicitly[TypeTag[M]]))
+  def collection[M:ClassTag:TypeTag]: MongoCollection[JsObject] = {
+    Mongo.getCollectionName(implicitly[TypeTag[M]]) match {
+      case Some(colName) => database.getCollection[JsObject](colName)
+      case None => throw CollectionNameNotFound("Fail to parse the collection name from parameter types of the methods in Mongo.")
+    }
+  }
+
+  private def getCollection[M:ClassTag:TypeTag]: MongoCollection[M] = {
+    Mongo.getCollectionName(implicitly[TypeTag[M]]) match {
+      case Some(colName) => database.getCollection[M](colName)
+      case None => throw CollectionNameNotFound("Fail to parse the collection name from parameter types of the methods in Mongo.")
+    }
+  }
 
   /**
     * Get the collection according to it's name.
     * @param collectionName
     * @return MongoCollection[JsObject]
     */
-  def getCollection(collectionName: String): MongoCollection[JsObject] =
+  def collection(collectionName: String): MongoCollection[JsObject] =
     database.getCollection[JsObject](collectionName)
 
   def close(): Unit = {
