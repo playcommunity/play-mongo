@@ -345,8 +345,21 @@ case class Mongo(config: MongoConfig) {
   def updateOne[M:ClassTag:TypeTag](filter: JsObject, update: JsObject): Future[UpdateResult] =
     getCollection[M].updateOne(filter, update)
 
+  def updateById[M:ClassTag:TypeTag](_id: String, update: JsObject): Future[UpdateResult] =
+    getCollection[M].updateById(_id, update)
+
+  def updateById[M:ClassTag:TypeTag](_id: Long, update: JsObject): Future[UpdateResult] =
+    getCollection[M].updateById(_id, update)
+
   def updateOne[M:ClassTag:TypeTag](filter: JsObject, update: JsObject, upsert: Boolean): Future[UpdateResult] =
     getCollection[M].updateOne(filter, update, new UpdateOptions().upsert(upsert))
+
+  def updateById[M:ClassTag:TypeTag](_id: String, update: JsObject, upsert: Boolean): Future[UpdateResult] =
+    getCollection[M].updateById(_id, update, upsert)
+
+  def updateById[M:ClassTag:TypeTag](_id: Long, update: JsObject, upsert: Boolean): Future[UpdateResult] =
+    getCollection[M].updateById(_id, update, upsert)
+
 
   /**
     * Update a single document in the collection according to the specified arguments.
@@ -363,6 +376,12 @@ case class Mongo(config: MongoConfig) {
   def updateOne[M:ClassTag:TypeTag](filter: JsObject, update: JsObject, options: UpdateOptions): Future[UpdateResult] =
     getCollection[M].updateOne(filter, update, options)
 
+  def updateById[M:ClassTag:TypeTag](_id: String, update: JsObject, options: UpdateOptions): Future[UpdateResult] =
+    getCollection[M].updateById(_id, update, options)
+
+  def updateById[M:ClassTag:TypeTag](_id: Long, update: JsObject, options: UpdateOptions): Future[UpdateResult] =
+    getCollection[M].updateById(_id, update, options)
+
   /**
     * Update a single document in the collection according to the specified arguments.
     *
@@ -377,11 +396,24 @@ case class Mongo(config: MongoConfig) {
     * @since 2.2
     * @note Requires MongoDB 3.6 or greater
     */
-  def updateOne[M:ClassTag:TypeTag](clientSession: ClientSession, filter: JsObject, update: JsObject): Future[UpdateResult] =
-    getCollection[M].updateOne(clientSession, filter, update)
+  def updateOne[M:ClassTag:TypeTag](filter: JsObject, update: JsObject, clientSession: ClientSession): Future[UpdateResult] =
+    getCollection[M].updateOne(filter, update, clientSession)
 
-  def updateOne[M:ClassTag:TypeTag](clientSession: ClientSession, filter: JsObject, update: JsObject, upsert: Boolean): Future[UpdateResult] =
-    getCollection[M].updateOne(clientSession, filter, update, new UpdateOptions().upsert(upsert))
+  def updateById[M:ClassTag:TypeTag](_id: String, update: JsObject, clientSession: ClientSession): Future[UpdateResult] =
+    getCollection[M].updateById(_id, update, clientSession)
+
+  def updateById[M:ClassTag:TypeTag](_id: Long, update: JsObject, clientSession: ClientSession): Future[UpdateResult] =
+    getCollection[M].updateById(_id, update, clientSession)
+
+  def updateOne[M:ClassTag:TypeTag](filter: JsObject, update: JsObject, upsert: Boolean, clientSession: ClientSession): Future[UpdateResult] =
+    getCollection[M].updateOne(filter, update, new UpdateOptions().upsert(upsert), clientSession)
+
+  def updateById[M:ClassTag:TypeTag](_id: String, update: JsObject, upsert: Boolean, clientSession: ClientSession): Future[UpdateResult] =
+    getCollection[M].updateById(_id, update, upsert, clientSession)
+
+  def updateById[M:ClassTag:TypeTag](_id: Long, update: JsObject, upsert: Boolean, clientSession: ClientSession): Future[UpdateResult] =
+    getCollection[M].updateById(_id, update, upsert, clientSession)
+
 
   /**
     * Update a single document in the collection according to the specified arguments.
@@ -398,8 +430,14 @@ case class Mongo(config: MongoConfig) {
     * @since 2.2
     * @note Requires MongoDB 3.6 or greater
     */
-  def updateOne[M:ClassTag:TypeTag](clientSession: ClientSession, filter: JsObject, update: JsObject, options: UpdateOptions): Future[UpdateResult] =
-    getCollection[M].updateOne(clientSession, filter, update, options)
+  def updateOne[M:ClassTag:TypeTag](filter: JsObject, update: JsObject, options: UpdateOptions, clientSession: ClientSession): Future[UpdateResult] =
+    getCollection[M].updateOne(filter, update, options, clientSession)
+
+  def updateById[M:ClassTag:TypeTag](_id: String, update: JsObject, options: UpdateOptions, clientSession: ClientSession): Future[UpdateResult] =
+    getCollection[M].updateById(_id, update, options, clientSession)
+
+  def updateById[M:ClassTag:TypeTag](_id: Long, update: JsObject, options: UpdateOptions, clientSession: ClientSession): Future[UpdateResult] =
+    getCollection[M].updateById(_id, update, options, clientSession)
 
   /**
     * Update many documents in the collection according to the specified arguments.

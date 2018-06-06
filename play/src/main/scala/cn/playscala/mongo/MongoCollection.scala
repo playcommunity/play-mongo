@@ -713,9 +713,20 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
   def updateOne(filter: JsObject, update: JsObject): Future[UpdateResult] =
     toFuture(wrapped.updateOne(filter, update, _: SingleResultCallback[UpdateResult]))
 
+  def updateById(_id: String, update: JsObject): Future[UpdateResult] =
+    toFuture(wrapped.updateOne(Json.obj("_id" -> _id), update, _: SingleResultCallback[UpdateResult]))
+
+  def updateById(_id: Long, update: JsObject): Future[UpdateResult] =
+    toFuture(wrapped.updateOne(Json.obj("_id" -> _id), update, _: SingleResultCallback[UpdateResult]))
 
   def updateOne(filter: JsObject, update: JsObject, upsert: Boolean): Future[UpdateResult] =
     toFuture(wrapped.updateOne(filter, update, new UpdateOptions().upsert(upsert), _: SingleResultCallback[UpdateResult]))
+
+  def updateById(_id: String, update: JsObject, upsert: Boolean): Future[UpdateResult] =
+    toFuture(wrapped.updateOne(Json.obj("_id" -> _id), update, new UpdateOptions().upsert(upsert), _: SingleResultCallback[UpdateResult]))
+
+  def updateById(_id: Long, update: JsObject, upsert: Boolean): Future[UpdateResult] =
+    toFuture(wrapped.updateOne(Json.obj("_id" -> _id), update, new UpdateOptions().upsert(upsert), _: SingleResultCallback[UpdateResult]))
 
   /**
    * Update a single document in the collection according to the specified arguments.
@@ -732,6 +743,12 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
   def updateOne(filter: JsObject, update: JsObject, options: UpdateOptions): Future[UpdateResult] =
     toFuture(wrapped.updateOne(filter, update, options, _: SingleResultCallback[UpdateResult]))
 
+  def updateById(_id: String, update: JsObject, options: UpdateOptions): Future[UpdateResult] =
+    toFuture(wrapped.updateOne(Json.obj("_id" -> _id), update, options, _: SingleResultCallback[UpdateResult]))
+
+  def updateById(_id: Long, update: JsObject, options: UpdateOptions): Future[UpdateResult] =
+    toFuture(wrapped.updateOne(Json.obj("_id" -> _id), update, options, _: SingleResultCallback[UpdateResult]))
+
   /**
    * Update a single document in the collection according to the specified arguments.
    *
@@ -746,11 +763,23 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def updateOne(clientSession: ClientSession, filter: JsObject, update: JsObject): Future[UpdateResult] =
+  def updateOne(filter: JsObject, update: JsObject, clientSession: ClientSession): Future[UpdateResult] =
     toFuture(wrapped.updateOne(clientSession, filter, update, _: SingleResultCallback[UpdateResult]))
 
-  def updateOne(clientSession: ClientSession, filter: JsObject, update: JsObject, upsert: Boolean): Future[UpdateResult] =
+  def updateById(_id: String, update: JsObject, clientSession: ClientSession): Future[UpdateResult] =
+    toFuture(wrapped.updateOne(clientSession, Json.obj("_id" -> _id), update, _: SingleResultCallback[UpdateResult]))
+
+  def updateById(_id: Long, update: JsObject, clientSession: ClientSession): Future[UpdateResult] =
+    toFuture(wrapped.updateOne(clientSession, Json.obj("_id" -> _id), update, _: SingleResultCallback[UpdateResult]))
+
+  def updateOne(filter: JsObject, update: JsObject, upsert: Boolean, clientSession: ClientSession): Future[UpdateResult] =
     toFuture(wrapped.updateOne(clientSession, filter, update, new UpdateOptions().upsert(upsert), _: SingleResultCallback[UpdateResult]))
+
+  def updateById(_id: String, update: JsObject, upsert: Boolean, clientSession: ClientSession): Future[UpdateResult] =
+    toFuture(wrapped.updateOne(clientSession, Json.obj("_id" -> _id), update, new UpdateOptions().upsert(upsert), _: SingleResultCallback[UpdateResult]))
+
+  def updateById(_id: Long, update: JsObject, upsert: Boolean, clientSession: ClientSession): Future[UpdateResult] =
+    toFuture(wrapped.updateOne(clientSession, Json.obj("_id" -> _id), update, new UpdateOptions().upsert(upsert), _: SingleResultCallback[UpdateResult]))
 
   /**
    * Update a single document in the collection according to the specified arguments.
@@ -767,9 +796,14 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def updateOne(clientSession: ClientSession, filter: JsObject, update: JsObject, options: UpdateOptions): Future[UpdateResult] =
+  def updateOne(filter: JsObject, update: JsObject, options: UpdateOptions, clientSession: ClientSession): Future[UpdateResult] =
     toFuture(wrapped.updateOne(clientSession, filter, update, options, _: SingleResultCallback[UpdateResult]))
 
+  def updateById(_id: String, update: JsObject, options: UpdateOptions, clientSession: ClientSession): Future[UpdateResult] =
+    toFuture(wrapped.updateOne(clientSession, Json.obj("_id" -> _id), update, options, _: SingleResultCallback[UpdateResult]))
+
+  def updateById(_id: Long, update: JsObject, options: UpdateOptions, clientSession: ClientSession): Future[UpdateResult] =
+    toFuture(wrapped.updateOne(clientSession, Json.obj("_id" -> _id), update, options, _: SingleResultCallback[UpdateResult]))
   /**
    * Update a single document in the collection according to the specified arguments.
    *

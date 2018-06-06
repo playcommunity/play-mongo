@@ -81,8 +81,13 @@ mongo.collection("common-user").insert(jsObj)
 
 ## Update
 ```
+mongo.updateById[User]("0", obj("$set" -> obj("password" -> "123321")))
 mongo.updateOne[User](obj("_id" -> "0"), obj("$set" -> obj("password" -> "123321")))
+
+mongo.collection[User].updateById("0", obj("$set" -> obj("password" -> "123321")))
 mongo.collection[User].updateOne(obj("_id" -> "0"), obj("$set" -> obj("password" -> "123321")))
+
+mongo.collection("common-user").updateById("0", obj("$set" -> obj("password" -> "123321")))
 mongo.collection("common-user").updateOne(obj("_id" -> "0"), obj("$set" -> obj("password" -> "123321")))
 ```
 
@@ -187,9 +192,9 @@ While we construct a `JsObject` using Json DSL, all numeric values(such as Byte,
 Before invoking the underlying driver，`Json` will be converted to `Bson`, and `JsNumber` will be converted to `BsonDecimal128`. While read from mongodb, we can't recover the concrete types of the original numeric values
 For example, we usually writes the following update operations,
 ```
-mongo.update[User](Json.obj("_id" -> "0"), Json.obj("$set" -> UserSetting("male", 18)))
+mongo.updateById[User]("0", Json.obj("$set" -> UserSetting("male", 18)))
 // Or
-mongo.update[User](Json.obj("_id" -> "0"), Json.obj("$set" -> Json.obj("setting" -> Json.obj("gender" -> "male", "age" -> 18))))
+mongo.updateById[User]("0", Json.obj("$set" -> Json.obj("setting" -> Json.obj("gender" -> "male", "age" -> 18))))
 ```
 Both `UserSetting("male", 32)` and `Json.obj("gender" -> "male", "age" -> 18)` will be converted to `Json.obj("gender" -> JsString("male"), "age" -> JsNumber(BigDecimal(18))`。
 So after these update operations, the type of `user.setting.age` field in mongodb will be `NumberDecimal`, while read it back, an error occurs,

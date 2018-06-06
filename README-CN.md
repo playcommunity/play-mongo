@@ -83,8 +83,13 @@ mongo.collection("common-user").insert(jsObj)
 
 ## Update
 ```
+mongo.updateById[User]("0", obj("$set" -> obj("password" -> "123321")))
 mongo.updateOne[User](obj("_id" -> "0"), obj("$set" -> obj("password" -> "123321")))
+
+mongo.collection[User].updateById("0", obj("$set" -> obj("password" -> "123321")))
 mongo.collection[User].updateOne(obj("_id" -> "0"), obj("$set" -> obj("password" -> "123321")))
+
+mongo.collection("common-user").updateById("0", obj("$set" -> obj("password" -> "123321")))
 mongo.collection("common-user").updateOne(obj("_id" -> "0"), obj("$set" -> obj("password" -> "123321")))
 ```
 
