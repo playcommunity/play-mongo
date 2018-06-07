@@ -45,8 +45,8 @@ lazy val codecs = Project(
   id = "codecs",
   base = file("codecs")
 ).settings(buildSettings)
+  .settings(publishSettings)
   .settings(
-    version := "0.1.0",
     libraryDependencies ++= Seq("com.typesafe.play" %% "play" % PlayVersion, mongodbDriver, reactiveStream, scalaReflect, scalaMeta, scalaMetaContrib, playJson, scalaTest)
   )
 
@@ -55,24 +55,30 @@ lazy val play = Project(
   base = file("play")
 ).enablePlugins(PlayLibrary)
   .settings(buildSettings)
+  .settings(publishSettings)
   .settings(
-    version := "0.1.0",
     libraryDependencies ++= Seq(
-      "com.typesafe.play" %% "play" % PlayVersion,
-      "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % "test"
+      //"com.typesafe.play" %% "play" % PlayVersion,
+      //"org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % "test"
     )
   )
-  .aggregate(codecs)
   .dependsOn(codecs)
 
 lazy val root = Project(
-  id = "play-mongo",
-  base = file(".")
-).settings(buildSettings)
+    id = "play-mongo-root",
+    base = file(".")
+  )
   .aggregate(play)
   .dependsOn(play)
+  .aggregate(codecs)
+  .dependsOn(codecs)
+  .settings(buildSettings)
+  .settings(publishSettings)
+  //.settings(noPublishing)
+
 
 playBuildRepoName in ThisBuild := "play-mongo"
+version in ThisBuild := "0.1.0"
 
 homepage := Some(url("https://github.com/playcommunity/play-mongo"))
 scmInfo := Some(ScmInfo(url("https://github.com/playcommunity/play-mongo"), "scm:git@github.com:playcommunity/play-mongo.git"))
@@ -89,12 +95,17 @@ licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 publishMavenStyle := true
 publishArtifact in Test := false
 
-// Add sonatype repository settings
-publishTo := {
-  val nexus = "https://oss.sonatype.org/"
-  if (isSnapshot.value)
-    Some("snapshots" at nexus + "content/repositories/snapshots")
-  else
-    Some("releases"  at nexus + "service/local/staging/deploy/maven2")
-}
+lazy val publishSettings = Seq(
+  publishTo := {
+    val nexus = "https://oss.sonatype.org/"
+    if (isSnapshot.value)
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    else
+      Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+  }
+)
+
+lazy val noPublishing = Seq(
+  publishTo := None
+)
 
