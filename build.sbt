@@ -74,8 +74,8 @@ lazy val root = Project(
 
 playBuildRepoName in ThisBuild := "play-mongo"
 
-homepage := Some(url("https://github.com/joymufeng/play-mongo"))
-scmInfo := Some(ScmInfo(url("https://github.com/joymufeng/play-mongo.git"), "git@github.com:joymufeng/play-mongo.git"))
+homepage := Some(url("https://github.com/playcommunity/play-mongo"))
+scmInfo := Some(ScmInfo(url("https://github.com/playcommunity/play-mongo"), "scm:git@github.com:playcommunity/play-mongo.git"))
 developers := List(
   Developer(
     "joymufeng",

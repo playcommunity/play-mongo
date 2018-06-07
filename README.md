@@ -140,7 +140,7 @@ mongo.gridFSBucket.findById("5b1183fed3ba643a3826325f").map{
 
 ## Change Stream
 `toSource` method will transform Change Stream to Akka Source, and then things become more funny. For example, we can achieve the following features with several line of codes,
--  Buffer the elements of Change Stream to bulk process, and pass to next step if either of the two conditions is established
+- Buffer the elements of Change Stream to bulk process, and pass to next step if either of the two conditions is established
   - up to 10 elements
   - exceed to 1000 ms
 - Traffic shaping with 1 passed per second  
