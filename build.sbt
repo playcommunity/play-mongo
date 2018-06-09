@@ -9,6 +9,14 @@ organization := "cn.playscala"
 
 organizationName := "cn.playscala"
 
+organizationHomepage := Some(url("https://github.com/playcommunity"))
+
+homepage := Some(url("https://github.com/playcommunity/play-mongo"))
+
+playBuildRepoName in ThisBuild := "play-mongo"
+
+version in ThisBuild := "0.1.0"
+
 val PlayVersion = playVersion(sys.env.getOrElse("PLAY_VERSION", "2.6.12"))
 
 // Dependencies
@@ -33,9 +41,9 @@ def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
 val buildSettings = Seq(
   organization := "cn.playscala",
   organizationName := "cn.playscala",
-  organizationHomepage := Some(url("http://www.playscala.cn")),
+  organizationHomepage := Some(url("https://github.com/playcommunity")),
   scalaVersion := "2.12.4",
-  crossScalaVersions := Seq("2.12.4"),
+  crossScalaVersions := Seq("2.11.12", "2.12.6"),
   scalacOptions in Compile := scalacOptionsVersion(scalaVersion.value),
   scalacOptions in Test := scalacOptionsTest,
   scalacOptions in IntegrationTest := scalacOptionsTest
@@ -74,26 +82,6 @@ lazy val root = Project(
   .dependsOn(codecs)
   .settings(buildSettings)
   .settings(publishSettings)
-  //.settings(noPublishing)
-
-
-playBuildRepoName in ThisBuild := "play-mongo"
-version in ThisBuild := "0.1.0"
-
-homepage := Some(url("https://github.com/playcommunity/play-mongo"))
-scmInfo := Some(ScmInfo(url("https://github.com/playcommunity/play-mongo"), "scm:git@github.com:playcommunity/play-mongo.git"))
-developers := List(
-  Developer(
-    "joymufeng",
-    "joymufeng",
-    "joymufeng@gmail.com",
-    url("https://github.com/joymufeng")
-  )
-)
-licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
-
-publishMavenStyle := true
-publishArtifact in Test := false
 
 lazy val publishSettings = Seq(
   publishTo := {
@@ -102,7 +90,22 @@ lazy val publishSettings = Seq(
       Some("snapshots" at nexus + "content/repositories/snapshots")
     else
       Some("releases"  at nexus + "service/local/staging/deploy/maven2")
-  }
+  },
+  publishMavenStyle := true,
+  publishArtifact in Test := false,
+  pomIncludeRepository := { _ => false },
+  pomExtra := (
+      <scm>
+        <url>git@github.com:playcommunity/play-mongo.git</url>
+        <connection>scm:git:git@github.com:playcommunity/play-mongo.git</connection>
+      </scm>
+      <developers>
+        <developer>
+          <name>joymufeng</name>
+          <organization>Play Community</organization>
+        </developer>
+      </developers>
+    )
 )
 
 lazy val noPublishing = Seq(

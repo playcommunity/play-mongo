@@ -16,7 +16,7 @@ libraryDependencies += "cn.playscala" % "play-mongo_2.12" % "0.1.0"
 ```
 打开 `conf/application.conf`, 添加数据库连接，
 ```
-mongodb.uri = "mongodb://user:password@host:port/play-community?authMode=scram-sha1"
+mongodb.uri = "mongodb://user:password@host:port/dbName?authMode=scram-sha1"
 ```
 然后需要配置 `Model` 位置, 配置代码需要在应用启动之前执行， 
 ```
@@ -194,11 +194,11 @@ mongo.insert[User].insert(User("0", "joymufeng", UserSetting("male", 32)))
 在调用底层驱动程序前，`Json` 将会被转换为 `Bson`，`JsNumber` 将会被转换为 `BsonDecimal128`。当从数据库读取写入的数据时，我们没办法恢复已经丢失的数值类型信息。
 例如我们通常会执行如下更新操作，
 ```
-mongo.update[User](Json.obj("_id" -> "0"), Json.obj("$set" -> UserSetting("male", 18)))
+mongo.update[User](obj("_id" -> "0"), obj("$set" -> UserSetting("male", 18)))
 // Or
-mongo.update[User](Json.obj("_id" -> "0"), Json.obj("$set" -> Json.obj("setting" -> Json.obj("gender" -> "male", "age" -> 18))))
+mongo.update[User](obj("_id" -> "0"), obj("$set" -> obj("setting" -> obj("gender" -> "male", "age" -> 18))))
 ```
-不管是 `UserSetting("male", 32)`， 还是 `Json.obj("gender" -> "male", "age" -> 18)` 最终都会被转换为 `Json.obj("gender" -> JsString("male"), "age" -> JsNumber(BigDecimal(18))`。
+不管是 `UserSetting("male", 32)`， 还是 `obj("gender" -> "male", "age" -> 18)` 最终都会被转换为 `obj("gender" -> JsString("male"), "age" -> JsNumber(BigDecimal(18))`。
 所以，在更新操作执行完成后， `user.setting.age` 字段在数据库中的类型为 `NumberDecimal`, 当执行读取操作时便会发生类型转换错误,
 ```
 mongo.findById[User]("0")
@@ -206,7 +206,7 @@ mongo.findById[User]("0")
 ```
 当试图将 `BigDecimal` 转换为 `Int` 时出错了. 因为在这个转换过程中会导致数值精度丢失。
 为了解决这个问题, 我们在转换 `JsNumber` 时尽量将其转换为较窄的数值类型，以保证其可以被安全地转换回来。
-例如 `Json.obj("age" -> JsNumber(18.0))` 会被转换为 `BsonDocument("age", BsonInt32(18))`。
+例如 `obj("age" -> JsNumber(18.0))` 会被转换为 `BsonDocument("age", BsonInt32(18))`。
 
 
 

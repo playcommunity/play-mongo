@@ -1,3 +1,6 @@
+# Welcome!
+For the chinese introduction, refer to [README-CN.md](https://github.com/playcommunity/play-mongo/blob/master/README-CN.md).
+
 # What's play-mongo ?
 play-mongo is a mongodb module for [Play Framework](https://www.playframework.com/), aims to introduce a concise way to play with mongodb while developing with Play Framework. 
 It's designed based on [Official Mongodb Scala Driver](https://github.com/mongodb/mongo-scala-driver) and bring more pragmatic features, such as:
@@ -16,7 +19,7 @@ libraryDependencies += "cn.playscala" % "play-mongo_2.12" % "0.1.0"
 ```
 And append your mongodb connection config to `conf/application.conf`,
 ```
-mongodb.uri = "mongodb://user:password@host:port/play-community?authMode=scram-sha1"
+mongodb.uri = "mongodb://user:password@host:port/dbName?authMode=scram-sha1"
 ```
 Then config where to find your models, the following code should be executed once before application start, 
 ```
@@ -140,7 +143,7 @@ mongo.gridFSBucket.findById("5b1183fed3ba643a3826325f").map{
 
 ## Change Stream
 `toSource` method will transform Change Stream to Akka Source, and then things become more funny. For example, we can achieve the following features with several line of codes,
-- Buffer the elements of Change Stream to bulk process, and pass to next step if either of the two conditions is established
+- Buffer the elements of Change Stream for bulk processes, and pass to next step if either of the two conditions is established
   - up to 10 elements
   - exceed to 1000 ms
 - Traffic shaping with 1 passed per second  
@@ -173,7 +176,7 @@ mongo.find[Article].fetch[Author]("authorId").list().map{ _.map{ t =>
 For each article, the related author will be fetched on condition `article.authorId == author._id`.
 
 ## Class, Json and Bson
-you should be more careful while working with json, because `JsNumber` is used to represent all numeric values in json. On the other side, Bson has more concrete numeric types. 
+You should be more careful while working with json, because `JsNumber` is used to represent all numeric values in json. On the other side, Bson has more concrete numeric types. 
 That means the conversion between Json and Bson is irreversible due to the asymmetry numeric types. Next step, we will analyze some common scenes. 
 The following is the model class which will be used.
 ```
@@ -189,21 +192,21 @@ Before invoking the underlying driver，`User` will be converted to `Bson`, and 
 
 ### Json -> Bson
 While we construct a `JsObject` using Json DSL, all numeric values(such as Byte, Short, Int, Long, Float and Double) will be converted to `JsNumber`(with `BigDecimal` inside), the concrete types of numeric values lost in this conversion.
-Before invoking the underlying driver，`Json` will be converted to `Bson`, and `JsNumber` will be converted to `BsonDecimal128`. While read from mongodb, we can't recover the concrete types of the original numeric values
+Before invoking the underlying driver，`Json` will be converted to `Bson`, and `JsNumber` will be converted to `BsonDecimal128`. While read from mongodb, we can't recover the concrete types of the original numeric values. 
 For example, we usually writes the following update operations,
 ```
-mongo.updateById[User]("0", Json.obj("$set" -> UserSetting("male", 18)))
+mongo.updateById[User]("0", obj("$set" -> UserSetting("male", 18)))
 // Or
-mongo.updateById[User]("0", Json.obj("$set" -> Json.obj("setting" -> Json.obj("gender" -> "male", "age" -> 18))))
+mongo.updateById[User]("0", obj("$set" -> obj("setting" -> obj("gender" -> "male", "age" -> 18))))
 ```
-Both `UserSetting("male", 32)` and `Json.obj("gender" -> "male", "age" -> 18)` will be converted to `Json.obj("gender" -> JsString("male"), "age" -> JsNumber(BigDecimal(18))`。
+Both `UserSetting("male", 32)` and `obj("gender" -> "male", "age" -> 18)` will be converted to `obj("gender" -> JsString("male"), "age" -> JsNumber(BigDecimal(18))`.
 So after these update operations, the type of `user.setting.age` field in mongodb will be `NumberDecimal`, while read it back, an error occurs,
 ```
-mongo.find[User](Json.obj("_id" -> "0")).first() 
+mongo.findById[User]("0")
 // [BsonInvalidOperationException: Invalid numeric type, found: DECIMAL128]
 ```
 While try to convert `BigDecimal` to `Int`, an exception is thrown. Because the precision value will be lost in this conversion.
 To solve this problem, we will convert JsNumber to a narrow type as much as possible, so it could be safely read back. 
-For example, `Json.obj("age" -> JsNumber(18.0))` will be converted to `BsonDocument("age", BsonInt32(18))`.
+For example, `obj("age" -> JsNumber(18.0))` will be converted to `BsonDocument("age", BsonInt32(18))`.
 
 
