@@ -881,7 +881,9 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    * @return a Observable with a single element the document that was removed.  If no documents matched the query filter, then null will be
    *         returned
    */
-  def findOneAndDelete(filter: JsObject): Future[TDocument] = toFuture(wrapped.findOneAndDelete(filter, _: SingleResultCallback[TDocument]))
+  def findOneAndDelete(filter: JsObject): Future[Option[TDocument]] =
+    toFuture(wrapped.findOneAndDelete(filter, _: SingleResultCallback[TDocument]))
+      .map( r => if (r == null) { None } else { Some(r) })
 
   /**
    * Atomically find a document and remove it.
@@ -891,8 +893,9 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    * @return a Observable with a single element the document that was removed.  If no documents matched the query filter, then null will be
    *         returned
    */
-  def findOneAndDelete(filter: JsObject, options: FindOneAndDeleteOptions): Future[TDocument] =
+  def findOneAndDelete(filter: JsObject, options: FindOneAndDeleteOptions): Future[Option[TDocument]] =
     toFuture(wrapped.findOneAndDelete(filter, options, _: SingleResultCallback[TDocument]))
+      .map( r => if (r == null) { None } else { Some(r) })
 
   /**
    * Atomically find a document and remove it.
@@ -904,8 +907,9 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def findOneAndDelete(clientSession: ClientSession, filter: JsObject): Future[TDocument] =
+  def findOneAndDelete(clientSession: ClientSession, filter: JsObject): Future[Option[TDocument]] =
     toFuture(wrapped.findOneAndDelete(clientSession, filter, _: SingleResultCallback[TDocument]))
+      .map( r => if (r == null) { None } else { Some(r) })
 
   /**
    * Atomically find a document and remove it.
@@ -918,8 +922,9 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def findOneAndDelete(clientSession: ClientSession, filter: JsObject, options: FindOneAndDeleteOptions): Future[TDocument] =
+  def findOneAndDelete(clientSession: ClientSession, filter: JsObject, options: FindOneAndDeleteOptions): Future[Option[TDocument]] =
     toFuture(wrapped.findOneAndDelete(clientSession, filter, options, _: SingleResultCallback[TDocument]))
+      .map( r => if (r == null) { None } else { Some(r) })
 
   /**
    * Atomically find a document and replace it.
@@ -930,8 +935,9 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    *         property, this will either be the document as it was before the update or as it is after the update.  If no documents matched the
    *         query filter, then null will be returned
    */
-  def findOneAndReplace(filter: JsObject, replacement: TDocument): Future[TDocument] =
+  def findOneAndReplace(filter: JsObject, replacement: TDocument): Future[Option[TDocument]] =
     toFuture(wrapped.findOneAndReplace(filter, replacement, _: SingleResultCallback[TDocument]))
+      .map( r => if (r == null) { None } else { Some(r) })
 
   /**
    * Atomically find a document and replace it.
@@ -943,8 +949,9 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    *         property, this will either be the document as it was before the update or as it is after the update.  If no documents matched the
    *         query filter, then null will be returned
    */
-  def findOneAndReplace(filter: JsObject, replacement: TDocument, options: FindOneAndReplaceOptions): Future[TDocument] =
+  def findOneAndReplace(filter: JsObject, replacement: TDocument, options: FindOneAndReplaceOptions): Future[Option[TDocument]] =
     toFuture(wrapped.findOneAndReplace(filter, replacement, options, _: SingleResultCallback[TDocument]))
+      .map( r => if (r == null) { None } else { Some(r) })
 
   /**
    * Atomically find a document and replace it.
@@ -958,8 +965,9 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def findOneAndReplace(clientSession: ClientSession, filter: JsObject, replacement: TDocument): Future[TDocument] =
+  def findOneAndReplace(clientSession: ClientSession, filter: JsObject, replacement: TDocument): Future[Option[TDocument]] =
     toFuture(wrapped.findOneAndReplace(clientSession, filter, replacement, _: SingleResultCallback[TDocument]))
+      .map( r => if (r == null) { None } else { Some(r) })
 
   /**
    * Atomically find a document and replace it.
@@ -974,8 +982,9 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def findOneAndReplace(clientSession: ClientSession, filter: JsObject, replacement: TDocument, options: FindOneAndReplaceOptions): Future[TDocument] =
+  def findOneAndReplace(clientSession: ClientSession, filter: JsObject, replacement: TDocument, options: FindOneAndReplaceOptions): Future[Option[TDocument]] =
     toFuture(wrapped.findOneAndReplace(clientSession, filter, replacement, options, _: SingleResultCallback[TDocument]))
+      .map( r => if (r == null) { None } else { Some(r) })
 
   /**
    * Atomically find a document and update it.
@@ -988,8 +997,9 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    *         property, this will either be the document as it was before the update or as it is after the update.  If no documents matched the
    *         query filter, then null will be returned
    */
-  def findOneAndUpdate(filter: JsObject, update: JsObject): Future[TDocument] =
+  def findOneAndUpdate(filter: JsObject, update: JsObject): Future[Option[TDocument]] =
     toFuture(wrapped.findOneAndUpdate(filter, update, _: SingleResultCallback[TDocument]))
+      .map( r => if (r == null) { None } else { Some(r) })
 
   /**
    * Atomically find a document and update it.
@@ -1003,8 +1013,9 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    *         property, this will either be the document as it was before the update or as it is after the update.  If no documents matched the
    *         query filter, then null will be returned
    */
-  def findOneAndUpdate(filter: JsObject, update: JsObject, options: FindOneAndUpdateOptions): Future[TDocument] =
+  def findOneAndUpdate(filter: JsObject, update: JsObject, options: FindOneAndUpdateOptions): Future[Option[TDocument]] =
     toFuture(wrapped.findOneAndUpdate(filter, update, options, _: SingleResultCallback[TDocument]))
+      .map( r => if (r == null) { None } else { Some(r) })
 
   /**
    * Atomically find a document and update it.
@@ -1020,8 +1031,9 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def findOneAndUpdate(clientSession: ClientSession, filter: JsObject, update: JsObject): Future[TDocument] =
+  def findOneAndUpdate(clientSession: ClientSession, filter: JsObject, update: JsObject): Future[Option[TDocument]] =
     toFuture(wrapped.findOneAndUpdate(clientSession, filter, update, _: SingleResultCallback[TDocument]))
+      .map( r => if (r == null) { None } else { Some(r) })
 
   /**
    * Atomically find a document and update it.
@@ -1038,8 +1050,9 @@ case class MongoCollection[TDocument](val wrapped: JMongoCollection[TDocument]) 
    * @since 2.2
    * @note Requires MongoDB 3.6 or greater
    */
-  def findOneAndUpdate(clientSession: ClientSession, filter: JsObject, update: JsObject, options: FindOneAndUpdateOptions): Future[TDocument] =
+  def findOneAndUpdate(clientSession: ClientSession, filter: JsObject, update: JsObject, options: FindOneAndUpdateOptions): Future[Option[TDocument]] =
     toFuture(wrapped.findOneAndUpdate(clientSession, filter, update, options, _: SingleResultCallback[TDocument]))
+      .map( r => if (r == null) { None } else { Some(r) })
 
   /**
    * Drops this collection from the Database.

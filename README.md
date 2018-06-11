@@ -56,7 +56,7 @@ The parameter type `User` here not only specify the related mongodb's collection
 and the result type of query is `User`. Notice that, the result type in this way can't be changed.
 The second way is using `mongo.getCollection` method,
 ```
-mongo.collection("common-user").find[User]().list().map{ user => }
+mongo.collection("common-user").find[User]().list().map{ users => }
 ```
 Here, the parameter type `User` in `find` method only specify the result type of query, we can change this parameter type to change the result type,
 ```

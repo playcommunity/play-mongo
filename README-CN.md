@@ -55,7 +55,7 @@ mongo.find[User]().list().map{ users => ... }
 
 第二种方式是使用 `mongo.getCollection` 方法,
 ```
-mongo.collection("common-user").find[User]().list().map{ user => }
+mongo.collection("common-user").find[User]().list().map{ users => }
 ```
 在这里， `find` 方法上的参数类型 `User` 仅仅用于指定返回的结果类型, 我们可以通过更改该参数类型设置不同的返回结果类型，
 ```
