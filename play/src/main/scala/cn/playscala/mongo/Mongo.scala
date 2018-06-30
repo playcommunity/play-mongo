@@ -179,7 +179,7 @@ case class Mongo(config: MongoConfig) {
     *         property, this will either be the document as it was before the update or as it is after the update.  If no documents matched the
     *         query filter, then null will be returned
     */
-  def findOneAndUpdate[M:ClassTag:TypeTag](filter: JsObject, update: JsObject): Future[M] =
+  def findOneAndUpdate[M:ClassTag:TypeTag](filter: JsObject, update: JsObject): Future[Option[M]] =
     getCollection[M].findOneAndUpdate(filter, update)
 
   /**
@@ -194,7 +194,7 @@ case class Mongo(config: MongoConfig) {
     *         property, this will either be the document as it was before the update or as it is after the update.  If no documents matched the
     *         query filter, then null will be returned
     */
-  def findOneAndUpdate[M:ClassTag:TypeTag](filter: JsObject, update: JsObject, options: FindOneAndUpdateOptions): Future[M] =
+  def findOneAndUpdate[M:ClassTag:TypeTag](filter: JsObject, update: JsObject, options: FindOneAndUpdateOptions): Future[Option[M]] =
     getCollection[M].findOneAndUpdate(filter, update, options)
 
   /**
@@ -211,7 +211,7 @@ case class Mongo(config: MongoConfig) {
     * @since 2.2
     * @note Requires MongoDB 3.6 or greater
     */
-  def findOneAndUpdate[M:ClassTag:TypeTag](clientSession: ClientSession, filter: JsObject, update: JsObject): Future[M] =
+  def findOneAndUpdate[M:ClassTag:TypeTag](clientSession: ClientSession, filter: JsObject, update: JsObject): Future[Option[M]] =
     getCollection[M].findOneAndUpdate(clientSession, filter, update)
 
   /**
@@ -229,7 +229,7 @@ case class Mongo(config: MongoConfig) {
     * @since 2.2
     * @note Requires MongoDB 3.6 or greater
     */
-  def findOneAndUpdate[M:ClassTag:TypeTag](clientSession: ClientSession, filter: JsObject, update: JsObject, options: FindOneAndUpdateOptions): Future[M] =
+  def findOneAndUpdate[M:ClassTag:TypeTag](clientSession: ClientSession, filter: JsObject, update: JsObject, options: FindOneAndUpdateOptions): Future[Option[M]] =
     getCollection[M].findOneAndUpdate(clientSession, filter, update, options)
 
   /**
