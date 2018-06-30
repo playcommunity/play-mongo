@@ -27,8 +27,8 @@ object ModelsRegistryProvider {
 
     val findClassList = getClassNameList(pkgName)
 
-    println("====> Find: " + findClassList.size)
-    findClassList.foreach(c => println("Find: " + c))
+    println("Find Models: " + findClassList.size)
+    findClassList.foreach(c => println("Find Model: " + c))
 
     val classList = findClassList.map(clazz => c.parse(s"classOf[${clazz}]"))
     q"""
