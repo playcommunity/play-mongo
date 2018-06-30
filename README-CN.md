@@ -9,33 +9,54 @@ play-mongo 是一个专门为 [Play Framework](https://www.playframework.com/) �
 - Change Stream 转 Akka Stream.
 - 支持关联查询(Relationship Query)
 
-# Getting Started
+# 快速起步
 打开`build.sbt`，添加如下依赖,
 ```
-libraryDependencies += "cn.playscala" % "play-mongo_2.12" % "0.1.0"
+libraryDependencies += "cn.playscala" % "play-mongo_2.12" % "0.2.0"
 ```
 打开 `conf/application.conf`, 添加数据库连接，
 ```
 mongodb.uri = "mongodb://user:password@host:port/dbName?authMode=scram-sha1"
 ```
-然后需要配置 `Model` 位置, 配置代码需要在应用启动之前执行， 
-```
-Mongo.setModelsPackage("models")
-```
-建议将上述代码放置在顶层包路径下的默认 `Module` 类中,
+然后在应用启动时设置模型类(models)的包路径，编辑`app/Module`类，
 ```
 class Module extends AbstractModule {
   override def configure() = {
     Mongo.setModelsPackage("models")
-    bind(classOf[InitializeService]).asEagerSingleton
   }
 }
 ```
+`Mongo.setModelsPackage`方法将会查找指定包路径下的所有`case class`，自动生成相应编解码器，并添加至驱动中。
 至此便可以将 `Mongo` 实例注入到任意需要的地方，
 ```
 @Singleton
 class Application @Inject()(cc: ControllerComponents, mongo: Mongo) extends AbstractController(cc) {}
 ```
+
+# 为 play-json 提供的隐式方法
+借助 play-json 提供的`Json.format`宏，我们可以很方便地为 case class 提供隐式的Reads和Writes，
+```
+import models._
+import play.api.libs.json.Format
+package object models {
+  implicit val emailFormat = Json.format[Email]
+  implicit val personFormat = Json.format[Person]
+  ...
+  implicit val addressFormat = Json.format[Address]
+}
+```
+通常每当我们在models包创建一个新的 case class，就需要在这里添加一个相应的隐式 Format 对象。编写这些样板代码是很枯燥无味的，为此我们实现了一个 implicit macro，
+只需要一行代码，便可以为所有的 case class 生成隐式的Reads和Writes，
+```
+import scala.language.experimental.macros
+import play.api.libs.json.Format
+import cn.playscala.mongo.codecs.macrocodecs.JsonFormatMacro
+
+package object models {
+  implicit def formats[T <: Product]: Format[T] = macro JsonFormatMacro.materializeJsonFormat[T]
+}
+```
+需要注意的是，该隐式方法需要定义在 package object 下，例如当定义在 `package object models` 下时，该隐式方法将会对 models 包下所有的 case class 生效。
 
 # Model and Collection
 Model 类使用 `@Entity` 注解标注， 一个 model 实例表示 mongodb collection 中的一个文档, 一个 mongodb collection 在概念上类似于关系数据库的一张表。

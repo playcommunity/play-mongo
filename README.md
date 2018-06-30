@@ -15,30 +15,50 @@ It's designed based on [Official Mongodb Scala Driver](https://github.com/mongod
 # Getting Started
 Add the following dependency to your `build.sbt`,
 ```
-libraryDependencies += "cn.playscala" % "play-mongo_2.12" % "0.1.0"
+libraryDependencies += "cn.playscala" % "play-mongo_2.12" % "0.2.0"
 ```
 And append your mongodb connection config to `conf/application.conf`,
 ```
 mongodb.uri = "mongodb://user:password@host:port/dbName?authMode=scram-sha1"
 ```
-Then config where to find your models, the following code should be executed once before application start, 
-```
-Mongo.setModelsPackage("models")
-```
-you can put it in the play's default `Module` class which is in the root package,
+Then before the application starts, config where to find your models, modify `app/Module` class as follows,
 ```
 class Module extends AbstractModule {
   override def configure() = {
     Mongo.setModelsPackage("models")
-    bind(classOf[InitializeService]).asEagerSingleton
   }
 }
 ```
+`Mongo.setModelsPackage` method will find all case classes in models package, auto-generating the related codecs, and add these codes to the driver.
 After all, you can inject `Mongo` instance into where you want. 
 ```
 @Singleton
 class Application @Inject()(cc: ControllerComponents, mongo: Mongo) extends AbstractController(cc) {}
 ```
+
+# An implicit method for play-json
+Thanks to `Json.format` macro, we can generate the implicit Reads and Writes of case class as follows,
+```
+import models._
+import play.api.libs.json.Format
+package object models {
+  implicit val emailFormat = Json.format[Email]
+  implicit val personFormat = Json.format[Person]
+  ...
+  implicit val addressFormat = Json.format[Address]
+}
+```
+But every time we create a new case class, we have to create a implicit Format here. So we implement a implicit macro, it achieves the same functions with only one line of code,
+```
+import scala.language.experimental.macros
+import play.api.libs.json.Format
+import cn.playscala.mongo.codecs.macrocodecs.JsonFormatMacro
+package object models {
+  implicit def formats[T <: Product]: Format[T] = macro JsonFormatMacro.materializeJsonFormat[T]
+}
+```
+This implicit method must be defined in a package object. If defined in `package object models`, the implicit method will be used for all case classes in models package.
+
 # Model and Collection
 A model class represent a document of the mongodb's collection (a collection is just like the table in relation database), which is a case class annotated with `@Entity` annotation,
 ```
