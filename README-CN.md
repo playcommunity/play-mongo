@@ -1,5 +1,5 @@
-# play-mongo 介绍
-play-mongo 是一个专门为 [Play Framework](https://www.playframework.com/) 开发的 Mongodb 模块, 旨在为 Play Framework 提供一种简洁的 Mongodb 访问方式。 
+# Play Mongo 介绍
+Play Mongo 是一个专门为 [Play Framework](https://www.playframework.com/) 开发的 Mongodb 模块, 旨在为 Play Framework 提供一种简洁的 Mongodb 访问方式。
 该项目基于 Mongodb 官方的 [Mongodb Scala Driver](https://github.com/mongodb/mongo-scala-driver) 开发，并且提供了更多实用功能，例如，
 
 - 更简洁多样的数据库交方式
@@ -33,8 +33,8 @@ class Module extends AbstractModule {
 class Application @Inject()(cc: ControllerComponents, mongo: Mongo) extends AbstractController(cc) {}
 ```
 
-# 为 play-json 提供的隐式方法
-借助 play-json 提供的`Json.format`宏，我们可以很方便地为 case class 提供隐式的Reads和Writes，
+# 为 Play Json 提供的隐式方法
+借助 Play Json 提供的`Json.format`宏，我们可以很方便地为 case class 提供隐式的Reads和Writes，
 ```
 import models._
 import play.api.libs.json.Format
