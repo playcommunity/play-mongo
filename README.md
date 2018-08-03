@@ -36,7 +36,7 @@ After all, you can inject `Mongo` instance into where you want.
 class Application @Inject()(cc: ControllerComponents, mongo: Mongo) extends AbstractController(cc) {}
 ```
 
-# An implicit method for play-json
+# Auto-generate Json Formats for case classes
 Thanks to `Json.format` macro, we can generate the implicit Reads and Writes of case class as follows,
 ```
 import models._
@@ -48,16 +48,15 @@ package object models {
   implicit val addressFormat = Json.format[Address]
 }
 ```
-But every time we create a new case class, we have to create a implicit Format here. So we implement a implicit macro, it achieves the same functions with only one line of code,
+But every time we create a new case class, we have to create a implicit Format here. So we implement a macro annotation `@JsonFormat`, which can auto-generate implicit json formats for case classes,
 ```
-import scala.language.experimental.macros
-import play.api.libs.json.Format
-import cn.playscala.mongo.codecs.macrocodecs.JsonFormatMacro
+import cn.playscala.mongo.codecs.macrocodecs.JsonFormat
 package object models {
-  implicit def formats[T <: Product]: Format[T] = macro JsonFormatMacro.materializeJsonFormat[T]
+  @JsonFormat("models")
+  implicit val formats = ???
 }
 ```
-This implicit method must be defined in a package object. If defined in `package object models`, the implicit method will be used for all case classes in models package.
+`@JsonFormat` macro annotation receive a package name as a parameter, which designates the package name of models.
 
 # Model and Collection
 A model class represent a document of the mongodb's collection (a collection is just like the table in relation database), which is a case class annotated with `@Entity` annotation,

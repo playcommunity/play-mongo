@@ -33,7 +33,7 @@ class Module extends AbstractModule {
 class Application @Inject()(cc: ControllerComponents, mongo: Mongo) extends AbstractController(cc) {}
 ```
 
-# 为 Play Json 提供的隐式方法
+# 自动生成 Json Formats
 借助 Play Json 提供的`Json.format`宏，我们可以很方便地为 case class 提供隐式的Reads和Writes，
 ```
 import models._
@@ -45,18 +45,16 @@ package object models {
   implicit val addressFormat = Json.format[Address]
 }
 ```
-通常每当我们在models包创建一个新的 case class，就需要在这里添加一个相应的隐式 Format 对象。编写这些样板代码是很枯燥无味的，为此我们实现了一个 implicit macro，
-只需要一行代码，便可以为所有的 case class 生成隐式的Reads和Writes，
+通常每当我们在models包创建一个新的 case class，就需要在这里添加一个相应的隐式 Format 对象。编写这些样板代码是很枯燥无味的，为此我们实现了一个 `@JsonFormat` macro annotation，
+只需要一个注解，便可以为所有的 case class 生成隐式的Reads和Writes，
 ```
-import scala.language.experimental.macros
-import play.api.libs.json.Format
-import cn.playscala.mongo.codecs.macrocodecs.JsonFormatMacro
-
+import cn.playscala.mongo.codecs.macrocodecs.JsonFormat
 package object models {
-  implicit def formats[T <: Product]: Format[T] = macro JsonFormatMacro.materializeJsonFormat[T]
+  @JsonFormat("models")
+  implicit val formats = ???
 }
 ```
-需要注意的是，该隐式方法需要定义在 package object 下，例如当定义在 `package object models` 下时，该隐式方法将会对 models 包下所有的 case class 生效。
+`@JsonFormat` 注解接收一个`pkg`参数，用以指明 models 所在的包名。
 
 # Model and Collection
 Model 类使用 `@Entity` 注解标注， 一个 model 实例表示 mongodb collection 中的一个文档, 一个 mongodb collection 在概念上类似于关系数据库的一张表。
