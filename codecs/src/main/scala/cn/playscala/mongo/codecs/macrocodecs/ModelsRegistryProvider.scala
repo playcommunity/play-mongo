@@ -128,17 +128,27 @@ object ModelsRegistryProvider {
     * @return the real path of the package name
     */
   private def getPackagePath(pkgName: String): String = {
-    import scala.collection.JavaConverters._
-
     val urls = this.getClass.getClassLoader.asInstanceOf[URLClassLoader].getURLs.toList
     urls.find(url => url.getFile.endsWith("/classes/")) match {
       case Some(url) =>
         val path = url.getFile.replace("file://", "").replace("file:/", "")
-        s"${path}../../../app/${pkgName}"
+        val playPkgPath = s"${path}../../../app/${pkgName}"
+        val sbtPkgPath = s"${path}../../../src/main/scala/${pkgName}"
+        if(new File(playPkgPath).exists()) {
+          playPkgPath
+        } else {
+          sbtPkgPath
+        }
       case None =>
         val slash = File.separator
         val basePath = System.getProperty("user.dir")
-        s"""${basePath}${slash}app${slash}${pkgName}"""
+        val playPkgPath = s"""${basePath}${slash}app${slash}${pkgName}"""
+        val sbtPkgPath = s"""${basePath}${slash}src${slash}main${slash}scala${slash}${pkgName}"""
+        if(new File(playPkgPath).exists()) {
+          playPkgPath
+        } else {
+          sbtPkgPath
+        }
     }
   }
 
