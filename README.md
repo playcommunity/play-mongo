@@ -15,7 +15,7 @@ It's designed based on [Official Mongodb Scala Driver](https://github.com/mongod
 # Getting Started
 Add the following dependency to your `build.sbt`,
 ```
-libraryDependencies += "cn.playscala" % "play-mongo_2.12" % "0.2.0"
+libraryDependencies += "cn.playscala" % "play-mongo_2.12" % "0.3.0"
 ```
 And append your mongodb connection config to `conf/application.conf`,
 ```
