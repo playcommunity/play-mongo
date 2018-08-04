@@ -8,7 +8,7 @@ import scala.reflect.runtime.{universe => ru}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 
-object ModelsRegistryProvider {
+object ModelRegistryMacro {
   val CASE_CLASS_NAME_PATTERN = """case\s+class\s+(\S+)\s*\(""".r
 
   def modelsRegistryImpl(c: Context)(modelsPackage: c.Tree): c.Tree = {

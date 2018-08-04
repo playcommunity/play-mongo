@@ -5,7 +5,7 @@ import cn.playscala.mongo.annotations.Entity
 import cn.playscala.mongo.client.{ClientSession, FindBuilder}
 import cn.playscala.mongo.codecs.IterableCodecProvider
 import cn.playscala.mongo.codecs.json.JsonCodecProvider
-import cn.playscala.mongo.codecs.macrocodecs.ModelsRegistryProvider
+import cn.playscala.mongo.codecs.macrocodecs.ModelRegistryMacro
 import cn.playscala.mongo.codecs.common.{BigDecimalCodec, JOffsetDateTimeCodec}
 import cn.playscala.mongo.gridfs.GridFSBucket
 import cn.playscala.mongo.internal.AsyncResultHelper.toFuture
@@ -65,7 +65,7 @@ object Mongo {
   }
 
   @compileTimeOnly("Find case classes utilises Macros and must be run at compile time.")
-  def setModelsPackage(modelsPackage: String): Mongo.type = macro ModelsRegistryProvider.modelsRegistryImpl
+  def setModelsPackage(modelsPackage: String): Mongo.type = macro ModelRegistryMacro.modelsRegistryImpl
 }
 
 case class Mongo(config: MongoConfig) {

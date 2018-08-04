@@ -13,6 +13,8 @@ Play Mongo 是一个专门为 [Play Framework](https://www.playframework.com/) �
 打开`build.sbt`，添加如下依赖,
 ```
 libraryDependencies += "cn.playscala" % "play-mongo_2.12" % "0.3.0"
+
+addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
 ```
 打开 `conf/application.conf`, 添加数据库连接，
 ```
