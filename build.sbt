@@ -21,13 +21,14 @@ version in ThisBuild := "0.3.0"
 val PlayVersion = playVersion(sys.env.getOrElse("PLAY_VERSION", "2.6.12"))
 
 // Dependencies
+val scalaTest      = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 val mongodbDriver  = "org.mongodb" % "mongodb-driver-async" % "3.7.0"
 val reactiveStream = "org.reactivestreams" % "reactive-streams" % "1.0.2"
 val scalaReflect   = "org.scala-lang" % "scala-reflect" % "2.12.4"
 val scalaMeta = "org.scalameta" %% "scalameta" % "3.7.3"
 val scalaMetaContrib = "org.scalameta" %% "contrib" % "3.7.3"
 val playJson       = "com.typesafe.play" %% "play-json" % "2.6.9"
-val scalaTest      = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
+val scalaGraph       = "org.scala-graph" %% "graph-core" % "1.12.5"
 
 //val scalacOptionsTest: Seq[String] = Seq( "-unchecked", "-deprecation", "-feature", "-Xlint:-missing-interpolator,_")
 
@@ -57,7 +58,7 @@ lazy val codecs = Project(
 ).settings(buildSettings)
   .settings(publishSettings)
   .settings(
-    libraryDependencies ++= Seq("com.typesafe.play" %% "play" % PlayVersion, mongodbDriver, reactiveStream, scalaReflect, scalaMeta, scalaMetaContrib, playJson, scalaTest)
+    libraryDependencies ++= Seq("com.typesafe.play" %% "play" % PlayVersion, scalaTest, mongodbDriver, reactiveStream, scalaReflect, scalaMeta, scalaMetaContrib, playJson, scalaGraph)
   )
 
 lazy val play = Project(

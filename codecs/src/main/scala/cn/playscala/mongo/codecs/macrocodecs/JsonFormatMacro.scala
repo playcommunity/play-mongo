@@ -36,11 +36,17 @@ object JsonFormatMacro {
     c.Expr[Any](Block(results, Literal(Constant(()))))
   }
 
+  /**
+    * Get all case classes in pkgName package, sort by dependencies.
+    * @param pkgName
+    * @return
+    */
   def getClassNameList(pkgName: String): List[String] = {
     import scala.meta._
     import scala.meta.contrib._
     import scala.collection.JavaConverters._
 
+    // Get full qualified class name.
     def getFullClassName(c: Defn.Class): String = {
       val ancestors =
         TreeOps.ancestors(c).collect {
@@ -52,6 +58,7 @@ object JsonFormatMacro {
       s"${ancestors.mkString(".")}.${c.name}"
     }
 
+    // Get all types in tpe's parameters.
     def getParameterTypes(tpe: Type): List[String] = {
       tpe match {
         case Type.Name(tpeName) => // simple type, e.g. String
@@ -59,6 +66,20 @@ object JsonFormatMacro {
         case Type.Apply(Type.Name(tpeName), args) =>
           tpeName :: args.flatMap(t => getParameterTypes(t))
       }
+    }
+
+    // Check recursion case class
+    def checkRecursion(tpe: (String, List[String])): Boolean = {
+      tpe._2.exists(_ == tpe._1)
+    }
+
+    // Find cyclic dependencies
+    def findCycle(types: List[(String, List[String])]): Option[List[String]] = {
+      import scalax.collection.Graph
+      import scalax.collection.GraphPredef._
+
+      val edges = types.flatMap(t => t._2.map(r => t._1 ~> r))
+      Graph(edges: _*).findCycle.map{ cycle => cycle.nodes.toList.map(_.value) }
     }
 
     val pkgPath = getPackagePath(pkgName)
@@ -94,6 +115,7 @@ object JsonFormatMacro {
           }
         }
 
+      // Calc the score for sorting according it's dependencies.
       def calcScore(className: String): Int = {
         tupList.find(_._2 == className) match {
           case Some(tup) =>
@@ -105,7 +127,17 @@ object JsonFormatMacro {
         }
       }
 
-      tupList.map{ t => t.copy(_4 = calcScore(t._2)) }.sortBy(_._4).map{ t =>
+      // Ignore recursion case classes.
+      val noRecTypes = tupList.filter(t => !checkRecursion((t._2, t._3)))
+
+      // Check cyclic dependencies
+      findCycle(noRecTypes.map(t => (t._2, t._3))) match {
+        case Some(list) =>
+          throw new Exception(s"Cyclic dependencies found: ${list.mkString(" -> ")}")
+        case None =>
+      }
+
+      noRecTypes.map{ t => t.copy(_4 = calcScore(t._2)) }.sortBy(_._4).map{ t =>
         println(t)
         t._1
       }

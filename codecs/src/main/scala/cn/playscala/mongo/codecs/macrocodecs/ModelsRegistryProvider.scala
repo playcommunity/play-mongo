@@ -30,20 +30,25 @@ object ModelsRegistryProvider {
     println("Find Models: " + findClassList.size)
     findClassList.foreach(c => println("Find Model: " + c))
 
-    val classList = findClassList.map(clazz => c.parse(s"classOf[${clazz}]"))
-    q"""
-      import ${pkgSymbol}._
-      import cn.playscala.mongo.codecs.Macros.createCodecProvider
-      import org.bson.codecs.configuration.CodecRegistries.fromProviders
-      import cn.playscala.mongo.Mongo
+    //val classList = findClassList.map(clazz => c.parse(s"classOf[${clazz}]"))
+    val classList = findClassList.map(clazz => c.mirror.staticClass(clazz))
 
-      if (${classList.nonEmpty}) {
-        val r = fromProviders(..${classList.map(c => q"$c")})
-        Mongo.addCodecRegistry(r)
-      }
+    val result =
+      q"""
+        import ${pkgSymbol}._
+        import cn.playscala.mongo.codecs.Macros.createCodecProvider
+        import org.bson.codecs.configuration.CodecRegistries.fromProviders
+        import cn.playscala.mongo.Mongo
 
-      Mongo
-     """
+        if (${classList.nonEmpty}) {
+          val r = fromProviders(..${classList.map(c => q"classOf[$c]")})
+          Mongo.addCodecRegistry(r)
+        }
+
+        Mongo
+       """
+    println(show(result))
+    result
   }
 
   /**
