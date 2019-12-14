@@ -2,7 +2,7 @@ import sbt.addCompilerPlugin
 
 name := "play-mongo"
 
-version := "0.3.0"
+version := "0.3.1"
 
 scalaVersion := "2.12.4"
 
@@ -14,9 +14,11 @@ organizationHomepage := Some(url("https://github.com/playcommunity"))
 
 homepage := Some(url("https://github.com/playcommunity/play-mongo"))
 
+updateOptions := updateOptions.value.withGigahorse(false)
+
 playBuildRepoName in ThisBuild := "play-mongo"
 
-version in ThisBuild := "0.3.0"
+version in ThisBuild := "0.3.1"
 
 val PlayVersion = playVersion(sys.env.getOrElse("PLAY_VERSION", "2.6.12"))
 
@@ -29,16 +31,6 @@ val scalaMeta = "org.scalameta" %% "scalameta" % "3.7.3"
 val scalaMetaContrib = "org.scalameta" %% "contrib" % "3.7.3"
 val playJson       = "com.typesafe.play" %% "play-json" % "2.6.9"
 val scalaGraph       = "org.scala-graph" %% "graph-core" % "1.12.5"
-
-//val scalacOptionsTest: Seq[String] = Seq( "-unchecked", "-deprecation", "-feature", "-Xlint:-missing-interpolator,_")
-
-/*def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
-  Seq( "-unchecked", "-deprecation", "-feature", "-Ywarn-dead-code"
-    /*,"-Xfatal-warnings", "-Ymacro-debug-verbose", "-Xlog-implicits", "-Yinfer-debug", "-Xprint:typer"*/) ++ (scalaVersion match {
-    case "2.12.4" => Seq("-Xlint:-unused,-missing-interpolator,_" /*, "-Ywarn-unused:imports,privates,locals,-implicits,-params"*/)
-    case _ => Seq("-language:existentials", "-Xlint:-missing-interpolator,_")
-  })
-}*/
 
 val buildSettings = Seq(
   organization := "cn.playscala",
@@ -88,6 +80,7 @@ lazy val publishSettings = Seq(
     else
       Some("releases"  at nexus + "service/local/staging/deploy/maven2")
   },
+  publishConfiguration := publishConfiguration.value.withOverwrite(true),
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { _ => false },

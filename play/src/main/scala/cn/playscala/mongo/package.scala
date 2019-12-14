@@ -10,7 +10,7 @@ import scala.reflect.ClassTag
 import scala.language.implicitConversions
 
 package object mongo {
-  private val LOOSE_ISO_INSTANT_PATTERN = "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z".r.pattern
+  private val LOOSE_ISO_INSTANT_PATTERN = "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([.][0-9]{3})?Z".r.pattern
 
   implicit def classTagToClassOf[C](ct: ClassTag[C]): Class[C] = ct.runtimeClass.asInstanceOf[Class[C]]
 
