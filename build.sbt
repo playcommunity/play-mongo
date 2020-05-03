@@ -2,7 +2,7 @@ import sbt.addCompilerPlugin
 
 name := "play-mongo"
 
-version := "0.3.1"
+version := "0.3.2"
 
 scalaVersion := "2.12.4"
 
@@ -18,7 +18,7 @@ updateOptions := updateOptions.value.withGigahorse(false)
 
 playBuildRepoName in ThisBuild := "play-mongo"
 
-version in ThisBuild := "0.3.1"
+version in ThisBuild := "0.3.2"
 
 val PlayVersion = playVersion(sys.env.getOrElse("PLAY_VERSION", "2.6.12"))
 

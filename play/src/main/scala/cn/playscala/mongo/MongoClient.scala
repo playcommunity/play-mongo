@@ -89,6 +89,11 @@ object MongoClient {
       case _             =>
     }
 
+    if(connectionString.getSslEnabled) {
+      builder.streamFactoryFactory(NettyStreamFactoryFactory.builder().build())
+        .applyToSslSettings(b => b.enabled(true))
+    }
+
     Option(connectionString.getCredential).map(credential => builder.credential(credential))
     Option(connectionString.getReadPreference).map(readPreference => builder.readPreference(readPreference))
     Option(connectionString.getReadConcern).map(readConcern => builder.readConcern(readConcern))
